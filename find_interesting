@@ -1,0 +1,77 @@
+#!/usr/bin/env ruby
+
+## If ".gitignore" is available, use it to optimize find.
+##
+## This is intended to be run from emacs
+## `file-cache-add-directory-using-find`, but it should work generally.
+
+## We do convert to absolute path, even if a relative path is specified as ARGV[0]
+
+dirExcludes= []
+excludes= %w{ *.o *.a *.class *.elc
+               *.png *.gif *.png *.jpg *.jpeg
+               *.zip *.tar.* *.swf
+               TAGS
+               *~ #* *#
+}
+
+ARGV[0]= File.expand_path ARGV[0]
+gitIgnore= File.join ARGV[0], '.gitignore'
+
+cmd = ['find', ARGV[0]]
+
+if File.readable? gitIgnore
+  cmd << '('
+  File.open( gitIgnore ) { |file|
+    while ( l= file.gets )
+      l.chomp!
+      unless l.empty? or l =~ /\A\s*#/
+        if l =~ /[?*]/
+          excludes << l
+        else
+          dirExcludes.push File.expand_path( l, ARGV[0] )
+        end
+      end
+    end
+  }
+
+  dirExcludes.push File.expand_path( '.git', ARGV[0] )
+
+  unless dirExcludes.empty?
+    dirExcludes.each { |dir|
+      cmd += ['-path', dir, '-o']
+    }
+    cmd.pop
+  end
+
+  cmd += %w{ ) -prune -o }
+end
+
+unless excludes.empty?
+  cmd += %w{ ( -type f -a ! ( }
+  excludes.each { |ex|
+    cmd += ['-name', ex, '-o']
+  }
+  cmd.pop
+  cmd += %w{ ) ) }
+end
+
+cmd += ARGV[1, ARGV.length - 1]
+
+## if we don't speicfy print some where, then prune will cause a print
+
+unless cmd.last == '-print'
+  cmd << '-print'
+end
+
+# <<<<<<< lewang : *old code* >>>>>>>
+
+system *cmd
+
+# =======  *test code* ==============
+# puts cmd
+# >>>>>>> *end* <<<<<<<<<<<<<<<<<<<<<
+
+# find . \( -path "./.git" -o -path "./public/downloads" \)
+# -prune -o \( -type f -a \! \( -iname "*.png" -o -iname "*.gif"
+# -o -iname "*.png" -o -iname "*.jpg" -o -iname "*.jpeg" -o -iname "*.zip" -o -iname "*.tar.*" \) \)> /tmp/out.txt
