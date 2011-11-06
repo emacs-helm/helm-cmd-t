@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun Nov  6 12:51:52 2011 (+0800)
+;; Last-Updated: Sun Nov  6 12:58:56 2011 (+0800)
 ;;           By: Le Wang
-;;     Update #: 32
+;;     Update #: 33
 ;; URL: https://github.com/lewang/anything-project-files
 ;; Keywords: anything project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -31,7 +31,15 @@
 ;; 3. install find_interesting script to an executable path of your choosing:
 ;;    e.g. /usr/local/bin
 ;;
-;; 4. read the self-documenting code for additional configuration options.
+;; 4. additional optional anything-config settings
+;;
+;;      (setq anything-ff-lynx-style-map nil
+;;            anything-input-idle-delay 0.1
+;;            anything-idle-delay 0.1
+;;      )
+;;
+;; 5. read the self-documenting code for additional configuration options.
+;;
 
 
 ;;; Commentary:
