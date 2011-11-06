@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Nov  5 20:39:44 2011 (+0800)
+;; Last-Updated: Sun Nov  6 12:51:52 2011 (+0800)
 ;;           By: Le Wang
-;;     Update #: 29
+;;     Update #: 32
 ;; URL: https://github.com/lewang/anything-project-files
 ;; Keywords: anything project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -160,7 +160,7 @@ You can configure which sources are used through the
 `anything-project-files-sources' variable.
 
 It is important to add a source that keeps track of files you
-work with.  This way, you don't have to worry about keeping the
+work with (e.g. `recentf').  This way, you don't have to worry about keeping the
 cached list of project files up-to-date.
 "
   (interactive)
