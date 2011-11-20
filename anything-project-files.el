@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun Nov  6 12:58:56 2011 (+0800)
+;; Last-Updated: Sun Nov 20 23:22:59 2011 (+0800)
 ;;           By: Le Wang
-;;     Update #: 33
+;;     Update #: 37
 ;; URL: https://github.com/lewang/anything-project-files
 ;; Keywords: anything project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -161,8 +161,10 @@ The first path returned will be the current project path.
                       (buffer-substring-no-properties (point) (point-at-eol))
                     (forward-line 1)))))
 
-(defun anything-project-files-find ()
+(defun anything-project-files-find (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
+
+With universal prefix arg C-u, invalidate cache for current project first.
 
 You can configure which sources are used through the
 `anything-project-files-sources' variable.
@@ -171,7 +173,9 @@ It is important to add a source that keeps track of files you
 work with (e.g. `recentf').  This way, you don't have to worry about keeping the
 cached list of project files up-to-date.
 "
-  (interactive)
+  (interactive "P")
+  (when (consp arg)
+    (anything-project-files-invalidate-cache (anything-project-files-current-project)))
   (anything :sources anything-project-files-sources
             :candidate-number-limit 10
             :buffer "*anything-project-find:*"))
@@ -183,10 +187,10 @@ cached list of project files up-to-date.
                  (maphash (lambda (k v)
                             (push k keys))
                           anything-project-files-cache)
-                 (list (anything-completing-read-default
-                        "project:" keys nil t nil nil
-                        (and (member root keys)
-                             root)))))
+                 (list (anything-comp-read "project: " keys
+                                           :must-match t
+                                           :preselect (and (member root keys)
+                                                           root)))))
   (remhash root anything-project-files-cache))
 
 
