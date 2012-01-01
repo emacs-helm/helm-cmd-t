@@ -58,12 +58,6 @@ end
 
 cmd += ARGV[1, ARGV.length - 1]
 
-## if we don't speicfy print some where, then prune will cause a print
-
-unless cmd.last == '-print'
-  cmd << '-print'
-end
-
 # <<<<<<< lewang : *old code* >>>>>>>
 
 system *cmd
