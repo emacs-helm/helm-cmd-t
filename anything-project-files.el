@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun Nov 20 23:22:59 2011 (+0800)
+;; Last-Updated: Wed Feb 22 11:22:08 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 37
+;;     Update #: 38
 ;; URL: https://github.com/lewang/anything-project-files
 ;; Keywords: anything project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -138,7 +138,8 @@ The first path returned will be the current project path.
 
 (defun anything-project-files-current-project (&optional buff)
   (with-current-buffer (or buff
-                           anything-current-buffer)
+                           anything-current-buffer
+                           (current-buffer))
     (let (res)
       (dolist (func anything-project-files-try-list)
         (when (and (fboundp func)
