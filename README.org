@@ -1,6 +1,6 @@
 * Purpose
 
-1. Anything source for files in current project.
+1. Helm source for files in current project.
 2. "C-x b" replacement.
 
 * Install
@@ -10,4 +10,4 @@ see header of source.
 
 I don't like flex.  It often returns results I didn't intend. It needs other [[http://scottfrazersblog.blogspot.com/2009/12/emacs-better-ido-flex-matching.html][optimizations]] to be useful.
 
-Anything's space separated regexps require a few more keystrokes, but the results are consistent and predictable.  See the header of anything-match-plugin.el for details.
+Helm's space separated regexps require a few more keystrokes, but the results are consistent and predictable.  See the header of helm-match-plugin.el for details.
