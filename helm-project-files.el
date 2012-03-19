@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Mon Mar 19 22:08:18 2012 (+0800)
+;; Last-Updated: Tue Mar 20 00:59:13 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 48
+;;     Update #: 53
 ;; URL: https://github.com/lewang/helm-project-files
 ;; Keywords: helm project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -119,13 +119,18 @@ The first path returned will be the current project path.
 (defvar helm-project-files-hints '(".git" ".hg" ".bzr" ".dir-locals.el")
   "A list of files considered to mark the root of a project")
 
+(defvar helm-project-files-anti-hint ".emacs-helm-no-spider"
+  "Marker file that disqualifies a directory from being considered a project.")
 
 (defun helm-project-files-root (&optional file)
   "get project directory of file"
   (setq file (or file (buffer-file-name)))
-  (loop for file in helm-project-files-hints
-        when (locate-dominating-file default-directory file)
-        do (return it)))
+  (let (res)
+    (loop for file in helm-project-files-hints
+          when (and
+                (setq res (locate-dominating-file default-directory file))
+                (not (file-exists-p (expand-file-name helm-project-files-anti-hint res))))
+          do (return res))))
 
 (defun helm-project-files-get-list ()
   (let ((project-root (helm-project-files-current-project))
