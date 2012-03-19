@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Mar 17 17:40:36 2012 (+0800)
+;; Last-Updated: Mon Mar 19 22:08:18 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 39
+;;     Update #: 48
 ;; URL: https://github.com/lewang/helm-project-files
 ;; Keywords: helm project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -46,7 +46,7 @@
 
 ;; This is yet another cmd-t package.  Fast file-name completion from the current
 ;; "project".  The concept of a "project" is configurable through
-;; `helm-project-files-try-list', by default `rinari' is supported.
+;; `helm-project-files-try-list'.
 ;;
 ;; It's highly recommended that you add an helm source like recentf that keeps
 ;; track of recent files you're created.  This way, you don't have to worry
@@ -96,7 +96,7 @@
 If the current file does not belong to a project then this path is used.
 ")
 
-(defvar helm-project-files-try-list '(rinari-root)
+(defvar helm-project-files-try-list '(helm-project-files-root)
   "A list of functions run in the context of the current buffer with no parameters.
 
 The first path returned will be the current project path.
@@ -110,11 +110,22 @@ The first path returned will be the current project path.
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
 
 (defvar helm-project-files-sources '(helm-c-source-buffers-list
-                                         helm-c-source-recentf
-                                         helm-c-source-files-in-current-dir+
-                                         helm-project-files-source
-                                         helm-c-source-buffer-not-found)
+                                     helm-c-source-recentf
+                                     helm-c-source-files-in-current-dir+
+                                     helm-project-files-source
+                                     helm-c-source-buffer-not-found)
   "list of sources for `helm-project-files-find'")
+
+(defvar helm-project-files-hints '(".git" ".hg" ".bzr" ".dir-locals.el")
+  "A list of files considered to mark the root of a project")
+
+
+(defun helm-project-files-root (&optional file)
+  "get project directory of file"
+  (setq file (or file (buffer-file-name)))
+  (loop for file in helm-project-files-hints
+        when (locate-dominating-file default-directory file)
+        do (return it)))
 
 (defun helm-project-files-get-list ()
   (let ((project-root (helm-project-files-current-project))
@@ -130,6 +141,8 @@ The first path returned will be the current project path.
 
 (defvar helm-project-files-source
   '((name . "project files")
+    (header-name . (lambda (source-name)
+                     (format "%s [%s]" source-name (funcall 'helm-project-files-current-project))))
     (candidates . helm-project-files-get-list)
     (match helm-c-match-on-file-name
            helm-c-match-on-directory-name)
@@ -178,8 +191,8 @@ cached list of project files up-to-date.
   (when (consp arg)
     (helm-project-files-invalidate-cache (helm-project-files-current-project)))
   (helm :sources helm-project-files-sources
-            :candidate-number-limit 10
-            :buffer "*helm-project-find:*"))
+        :candidate-number-limit 10
+        :buffer "*helm-project-find:*"))
 
 (defun helm-project-files-invalidate-cache (root)
   "Invalidate the cached file-list for ROOT."
@@ -189,9 +202,9 @@ cached list of project files up-to-date.
                             (push k keys))
                           helm-project-files-cache)
                  (list (helm-comp-read "project: " keys
-                                           :must-match t
-                                           :preselect (and (member root keys)
-                                                           root)))))
+                                       :must-match t
+                                       :preselect (and (member root keys)
+                                                       root)))))
   (remhash root helm-project-files-cache))
 
 
