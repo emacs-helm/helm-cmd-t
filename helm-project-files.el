@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Tue Mar 20 00:59:13 2012 (+0800)
+;; Last-Updated: Sat May 26 09:36:28 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 53
+;;     Update #: 56
 ;; URL: https://github.com/lewang/helm-project-files
 ;; Keywords: helm project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -111,7 +111,7 @@ The first path returned will be the current project path.
 
 (defvar helm-project-files-sources '(helm-c-source-buffers-list
                                      helm-c-source-recentf
-                                     helm-c-source-files-in-current-dir+
+                                     helm-c-source-files-in-current-dir
                                      helm-project-files-source
                                      helm-c-source-buffer-not-found)
   "list of sources for `helm-project-files-find'")
@@ -195,9 +195,10 @@ cached list of project files up-to-date.
   (interactive "P")
   (when (consp arg)
     (helm-project-files-invalidate-cache (helm-project-files-current-project)))
-  (helm :sources helm-project-files-sources
-        :candidate-number-limit 10
-        :buffer "*helm-project-find:*"))
+  (let ((helm-ff-transformer-show-only-basename nil))
+    (helm :sources helm-project-files-sources
+          :candidate-number-limit 10
+          :buffer "*helm-project-find:*")))
 
 (defun helm-project-files-invalidate-cache (root)
   "Invalidate the cached file-list for ROOT."
