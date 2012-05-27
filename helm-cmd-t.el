@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun May 27 21:09:38 2012 (+0800)
+;; Last-Updated: Sun May 27 21:47:49 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 111
+;;     Update #: 115
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -152,34 +152,37 @@ return (<repo type> . <root.)"
                (return (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
                              (directory-file-name res)))))))
 
+(defun helm-cmd-t-get-create-source (repo-root)
+  "source for repo-root"
+  (let* ((source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
+         (candidates-buffer (get-buffer-create source-buffer-name))
+         (my-source (with-current-buffer candidates-buffer
+                      (cdr (assq 'helm-source helm-cmd-t-data)))))
+    (or my-source
+        (with-current-buffer candidates-buffer
+          (erase-buffer)
+          ;; hard code the git for testing
+          (shell-command (format (helm-cmd-t-get-listing-command my-root-data) my-root) t)
+          (setq my-source `((name . ,(format "project files [%s]" my-root))
+                            (init . ,(lexical-let ((candidates-buffer candidates-buffer))
+                                       #'(lambda ()
+                                           (helm-candidate-buffer candidates-buffer))))
+                            (candidates-in-buffer)
+                            (match helm-c-match-on-file-name
+                                   helm-c-match-on-directory-name)
+                            (action . helm-cmd-t-find-file)
+                            (type . file)))
+          (setq helm-cmd-t-data (list (cons 'helm-source my-source)
+                                      (cons 'project-root my-root))))
+        my-source)))
+
 (defun helm-cmd-t-sources ()
   "return a list of sources appropriate for use with helm.
 
 helm-cmd-t-source is replaced with an appropriate item .
 "
   (let* ((my-sources (append helm-cmd-t-sources '()))
-         (my-root-data (funcall 'helm-cmd-t-root-data))
-         (my-root (cdr my-root-data))
-         (my-source-buffer-name (helm-cmd-t-get-source-buffer-name my-root))
-         (candidates-buffer (get-buffer-create my-source-buffer-name))
-         (my-source (with-current-buffer candidates-buffer
-                      (cdr (assq 'helm-source helm-cmd-t-data)))))
-    (unless my-source
-      (with-current-buffer candidates-buffer
-        (erase-buffer)
-        ;; hard code the git for testing
-        (shell-command (format (helm-cmd-t-get-listing-command my-root-data) my-root) t)
-        (setq my-source `((name . ,(format "project files [%s]" my-root))
-                          (init . ,(lexical-let ((candidates-buffer candidates-buffer))
-                                     #'(lambda ()
-                                         (helm-candidate-buffer candidates-buffer))))
-                          (candidates-in-buffer)
-                          (match helm-c-match-on-file-name
-                                 helm-c-match-on-directory-name)
-                          (action . helm-cmd-t-find-file)
-                          (type . file)))
-        (setq helm-cmd-t-data (list (cons 'helm-source my-source)
-                                  (cons 'project-root my-root)))))
+         (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root))))
     (setcar (memq 'helm-cmd-t-source my-sources) my-source)
     my-sources))
 
