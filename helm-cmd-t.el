@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun May 27 21:47:49 2012 (+0800)
+;; Last-Updated: Sun May 27 23:55:39 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 115
+;;     Update #: 125
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -135,7 +135,8 @@ helm-cmd-t-source is a place-holder.
 (defun helm-cmd-t-root (&optional buff)
   "return project root of buffer as string"
   (with-current-buffer (or buff
-                           helm-current-buffer
+                           (and helm-alive-p
+                                helm-current-buffer)
                            (current-buffer))
     (cdr (helm-cmd-t-root-data))))
 
@@ -147,14 +148,22 @@ return (<repo type> . <root.)"
   (let (res)
     (loop for hint-file in helm-cmd-t-cookies
           do (when (setq res (locate-dominating-file file hint-file))
-               (when (file-exists-p (expand-file-name helm-cmd-t-anti-hint res))
-                 (setq res helm-cmd-t-default-repo))
-               (return (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
-                             (directory-file-name res)))))))
+               (if (file-exists-p (expand-file-name helm-cmd-t-anti-hint res))
+                   (if (equal file helm-cmd-t-default-repo)
+                       (error "default repo %s is not valid" file)
+                     (setq res (helm-cmd-t-root-data helm-cmd-t-default-repo)))
+                 (setq res (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
+                                 (directory-file-name res))))
+               (return)))
+    (unless res
+      (error "no project root found."))
+    res))
 
-(defun helm-cmd-t-get-create-source (repo-root)
+(defun helm-cmd-t-get-create-source (repo-root-data)
   "source for repo-root"
-  (let* ((source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
+  (let* ((repo-root (cdr repo-root-data))
+         (root-type (car repo-root-data))
+         (source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
          (candidates-buffer (get-buffer-create source-buffer-name))
          (my-source (with-current-buffer candidates-buffer
                       (cdr (assq 'helm-source helm-cmd-t-data)))))
@@ -162,8 +171,8 @@ return (<repo type> . <root.)"
         (with-current-buffer candidates-buffer
           (erase-buffer)
           ;; hard code the git for testing
-          (shell-command (format (helm-cmd-t-get-listing-command my-root-data) my-root) t)
-          (setq my-source `((name . ,(format "project files [%s]" my-root))
+          (shell-command (format (helm-cmd-t-get-listing-command root-type) repo-root) t)
+          (setq my-source `((name . ,(format "project files [%s]" repo-root))
                             (init . ,(lexical-let ((candidates-buffer candidates-buffer))
                                        #'(lambda ()
                                            (helm-candidate-buffer candidates-buffer))))
@@ -173,8 +182,8 @@ return (<repo type> . <root.)"
                             (action . helm-cmd-t-find-file)
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
-                                      (cons 'project-root my-root))))
-        my-source)))
+                                      (cons 'project-root repo-root)))
+          my-source))))
 
 (defun helm-cmd-t-sources ()
   "return a list of sources appropriate for use with helm.
@@ -182,7 +191,7 @@ return (<repo type> . <root.)"
 helm-cmd-t-source is replaced with an appropriate item .
 "
   (let* ((my-sources (append helm-cmd-t-sources '()))
-         (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root))))
+         (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
     (setcar (memq 'helm-cmd-t-source my-sources) my-source)
     my-sources))
 
@@ -196,8 +205,8 @@ helm-cmd-t-source is replaced with an appropriate item .
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format root))
 
-(defun helm-cmd-t-get-listing-command (root-data)
-  (cdr (assoc (car root-data) helm-cmd-t-repo-types)))
+(defun helm-cmd-t-get-listing-command (root-type)
+  (cdr (assoc root-type helm-cmd-t-repo-types)))
 
 (defun helm-cmd-t (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
