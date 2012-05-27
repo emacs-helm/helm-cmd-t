@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun May 27 23:55:39 2012 (+0800)
+;; Last-Updated: Mon May 28 00:09:24 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 125
+;;     Update #: 126
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -96,8 +96,8 @@
 (make-variable-buffer-local 'helm-cmd-t-data)
 
 (defvar helm-cmd-t-default-repo nil
-  "A path that points to a default project root.
-If the current file does not belong to a project then this path is used.
+  "A path that points to a default repo root.
+If the current file does not belong to a repo then this path is used.
 ")
 
 (defvar helm-cmd-t-command "find_interesting"
@@ -109,7 +109,7 @@ If the current file does not belong to a project then this path is used.
     (bzr . ,(concat helm-cmd-t-command " %s"))
     (dir-locals.el . ,(concat helm-cmd-t-command " %s")))
   "root types supported.
-this is an alist of (type . \"format-string\") the project root is used to format the command ")
+this is an alist of (type . \"format-string\") the repo root is used to format the command ")
 
 (defvar helm-cmd-t-cookies (mapcar (lambda (repo-type)
                                  (concat "." (symbol-name (car repo-type))))
@@ -127,13 +127,13 @@ helm-cmd-t-source is a place-holder.
 ")
 
 (defvar helm-cmd-t-anti-hint ".emacs-helm-no-spider"
-  "Marker file that disqualifies a directory from being considered a project.")
+  "Marker file that disqualifies a directory from being considered a repo.")
 
 (defvar helm-cmd-t-source-buffer-format
   " *helm-cmd-t source - [%s]*")
 
 (defun helm-cmd-t-root (&optional buff)
-  "return project root of buffer as string"
+  "return repo root of buffer as string"
   (with-current-buffer (or buff
                            (and helm-alive-p
                                 helm-current-buffer)
@@ -141,7 +141,7 @@ helm-cmd-t-source is a place-holder.
     (cdr (helm-cmd-t-root-data))))
 
 (defun helm-cmd-t-root-data (&optional file)
-  "get project directory of file
+  "get repo directory of file
 return (<repo type> . <root.)"
   (setq file (or file
                  default-directory))
@@ -156,7 +156,7 @@ return (<repo type> . <root.)"
                                  (directory-file-name res))))
                (return)))
     (unless res
-      (error "no project root found."))
+      (error "no repo root found."))
     res))
 
 (defun helm-cmd-t-get-create-source (repo-root-data)
@@ -172,7 +172,7 @@ return (<repo type> . <root.)"
           (erase-buffer)
           ;; hard code the git for testing
           (shell-command (format (helm-cmd-t-get-listing-command root-type) repo-root) t)
-          (setq my-source `((name . ,(format "project files [%s]" repo-root))
+          (setq my-source `((name . ,(format "repo files [%s]" repo-root))
                             (init . ,(lexical-let ((candidates-buffer candidates-buffer))
                                        #'(lambda ()
                                            (helm-candidate-buffer candidates-buffer))))
@@ -182,7 +182,7 @@ return (<repo type> . <root.)"
                             (action . helm-cmd-t-find-file)
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
-                                      (cons 'project-root repo-root)))
+                                      (cons 'repo-root repo-root)))
           my-source))))
 
 (defun helm-cmd-t-sources ()
@@ -200,7 +200,7 @@ helm-cmd-t-source is replaced with an appropriate item .
   "find file"
   (find-file (expand-file-name candidate
                                (with-current-buffer (helm-candidate-buffer)
-                                 (cdr (assq 'project-root helm-cmd-t-data))))))
+                                 (cdr (assq 'repo-root helm-cmd-t-data))))))
 
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format root))
@@ -211,14 +211,14 @@ helm-cmd-t-source is replaced with an appropriate item .
 (defun helm-cmd-t (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
-With universal prefix arg C-u, invalidate cache for current project first.
+With universal prefix arg C-u, invalidate cache for current repo first.
 
 You can configure which sources are used through the
 `helm-cmd-t-sources' variable.
 
 It is important to add a source that keeps track of files you
 work with (e.g. `recentf').  This way, you don't have to worry about keeping the
-cached list of project files up-to-date.
+cached list of repo files up-to-date.
 "
   (interactive "P")
   (when (consp arg)
@@ -226,7 +226,7 @@ cached list of project files up-to-date.
   (let ((helm-ff-transformer-show-only-basename nil))
     (helm :sources (helm-cmd-t-sources)
           :candidate-number-limit 10
-          :buffer "*helm-project-find:*")))
+          :buffer "*helm-cmd-t:*")))
 
 (defun helm-cmd-t-invalidate-cache (root)
   "Invalidate the cached file-list for ROOT."
@@ -243,7 +243,7 @@ cached list of project files up-to-date.
                                (push (match-string-no-properties 1 b-name) roots)))))
                        (buffer-list))
                  (require 'helm-mode)
-                 (list (helm-comp-read "project: " roots
+                 (list (helm-comp-read "repo: " roots
                                        :must-match t
                                        :preselect (and (member curr-root roots)
                                                        curr-root)))))
@@ -253,4 +253,4 @@ cached list of project files up-to-date.
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; helm-project-files.el ends here
+;; helm-cmd-t.el ends here
