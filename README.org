@@ -1,13 +1,15 @@
 * Purpose
 
-1. Helm source for files in current project.
-2. "C-x b" replacement.
+1. Provide FAST FAST FAST cmd-t completion in repositions (git, hg, etc)
 
 * Install
 
 see header of source.
 * But what about flex?
 
-I don't like flex.  It often returns results I didn't intend. It needs other [[http://scottfrazersblog.blogspot.com/2009/12/emacs-better-ido-flex-matching.html][optimizations]] to be useful.
+I don't like flex.  It often returns results I didn't intend. It needs other
+[[http://scottfrazersblog.blogspot.com/2009/12/emacs-better-ido-flex-matching.html][optimizations]] to be useful.
 
-Helm's space separated regexps require a few more keystrokes, but the results are consistent and predictable.  See the header of helm-match-plugin.el for details.
+Helm's space separated regexps require a few more keystrokes, but the results
+are consistent and predictable.  See the header of helm-match-plugin.el for
+details.
