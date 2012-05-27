@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun May 27 12:03:59 2012 (+0800)
+;; Last-Updated: Sun May 27 19:51:09 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 59
+;;     Update #: 101
 ;; URL: https://github.com/lewang/helm-project-files
 ;; Keywords: helm project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
@@ -26,7 +26,7 @@
 ;;
 ;;      (require 'helm-config)
 ;;      (require 'helm-project-files)
-;;      (define-key (current-global-map) [remap switch-to-buffer] 'helm::pf-find)
+;;      (define-key (current-global-map) [remap switch-to-buffer] 'helm::project-files)
 ;;
 ;; 3. install find_interesting script to an executable path of your choosing:
 ;;    e.g. /usr/local/bin
@@ -91,38 +91,54 @@
 (provide 'helm-project-files)
 (require 'helm-config)
 
+(defvar helm::pf-data nil
+  "project files data only relevant in helm source buffer.")
+(make-variable-buffer-local 'helm::pf-data)
+
 (defvar helm::pf-default nil
   "A path that points to a default project root.
 If the current file does not belong to a project then this path is used.
 ")
 
-(defvar helm::pf-try-list '(helm::pf-root)
+(defvar helm::pf-try-list '(helm::pf-root-data)
   "A list of functions run in the context of the current buffer with no parameters.
 
 The first path returned will be the current project path.
 ")
 
-(defvar helm::pf-cache
-  (make-hash-table :test 'equal :size 10)
-  "hash table of project-root to filecache like alist")
-
 (defvar helm::pf-command "find_interesting"
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
 
-(defvar helm::pf-sources '(helm-c-source-buffers-list
-                                     helm-c-source-recentf
-                                     helm-c-source-files-in-current-dir
-                                     helm::pf-source
-                                     helm-c-source-buffer-not-found)
-  "list of sources for `helm::pf-find'")
+(defvar helm::pf-root-types
+  `((git . "git --no-pager ls-files --full-name -- %s")
+    (hg . ,(concat helm::pf-command " %s"))
+    (bzr . ,(concat helm::pf-command " %s"))
+    (dir-locals.el . ,(concat helm::pf-command " %s")))
+  "root types supported.
+this is an alist of (type . \"format-string\") the project root is used to format the command ")
 
-(defvar helm::pf-hints '(".git" ".hg" ".bzr" ".dir-locals.el")
+(defvar helm::pf-hints (mapcar (lambda (root-type)
+                                 (concat "." (symbol-name (car root-type))))
+                               helm::pf-root-types)
   "A list of files considered to mark the root of a project")
+
+(defvar helm::pf-sources '(helm-c-source-buffers-list
+                           helm-c-source-recentf
+                           helm-c-source-files-in-current-dir
+                           helm::pf-source
+                           helm-c-source-buffer-not-found)
+  "list of sources for `helm::pf-find'
+
+helm::pf-source is a place-holder.
+")
 
 (defvar helm::pf-anti-hint ".emacs-helm-no-spider"
   "Marker file that disqualifies a directory from being considered a project.")
 
-(defun helm::pf-root (&optional file)
+(defvar helm::pf-source-buffer-format
+  " *helm::pf source - [%s]*")
+
+(defun helm::pf-root-data (&optional file)
   "get project directory of file
 return (<repo type> . <root.)"
   (setq file (or file (buffer-file-name)))
@@ -131,31 +147,42 @@ return (<repo type> . <root.)"
           when (and
                 (setq res (locate-dominating-file file hint-file))
                 (not (file-exists-p (expand-file-name helm::pf-anti-hint res))))
-          do (return (cons (replace-regexp-in-string "\\`\\.+" "" hint-file) res)))))
+          do (return (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file)) res)))))
 
-(defun helm::pf-get-list ()
-  (let ((project-root (helm::pf-current-project))
-        cached-files)
-    (when project-root
-      (setq cached-files (gethash project-root helm::pf-cache))
-      (unless cached-files
-        (setq cached-files
-              (puthash project-root
-                       (helm::pf-get-list_  project-root)
-                       helm::pf-cache))))
-    cached-files))
+(defun helm::pf-sources ()
+  "return a list of sources appropriate for use with helm.
 
-(defvar helm::pf-source
-  '((name . "project files")
-    (header-name . (lambda (source-name)
-                     (format "%s [%s]" source-name (funcall 'helm::pf-current-project))))
-    (candidates . helm::pf-get-list)
-    (match helm-c-match-on-file-name
-           helm-c-match-on-directory-name)
-    (type . file))
-  "files in the current project")
+helm::pf-source is replaced with an appropriate item .
+"
+  (let* ((my-sources (append helm::pf-sources '()))
+         (my-root-data (funcall 'helm::pf-root-data))
+         (my-root (cdr my-root-data))
+         (my-source-buffer-name (helm::pf-get-source-buffer-name my-root))
+         (candidates-buffer (get-buffer-create my-source-buffer-name))
+         (my-source (with-current-buffer candidates-buffer
+                      (cdr (assq 'helm-source helm::pf-data)))))
+    (unless my-source
+      (with-current-buffer candidates-buffer
+        (erase-buffer)
+        ;; hard code the git for testing
+        (shell-command (format (helm::pf-get-listing-command my-root-data) my-root) t)
+        (setq my-source `((name . ,(format "project files [%s]" my-root))
+                          (init . ,(lexical-let ((candidates-buffer candidates-buffer))
+                                     #'(lambda ()
+                                         (helm-candidate-buffer candidates-buffer))))
+                          (candidates-in-buffer)
+                          (match helm-c-match-on-file-name
+                                 helm-c-match-on-directory-name)
+                          (action . helm::pf-find-file)
+                          (type . file)))
+        (setq helm::pf-data (list (cons 'helm-source my-source)
+                                  (cons 'project-root my-root)))))
+    (setcar (memq 'helm::pf-source my-sources) my-source)
+    my-sources))
 
-(defun helm::pf-current-project (&optional buff)
+
+(defun helm::pf-root (&optional buff)
+  "return project root of buffer as string"
   (with-current-buffer (or buff
                            helm-current-buffer
                            (current-buffer))
@@ -165,23 +192,24 @@ return (<repo type> . <root.)"
                    (setq res (funcall func)))
           (return nil)))
       (setq res (or res
-                    (helm::pf-root helm::pf-default)))
+                    (helm::pf-root-data helm::pf-default)))
       (and res
            (directory-file-name
             (expand-file-name (cdr res)))))))
 
-(defun helm::pf-get-list_ (root)
-  (with-temp-buffer
-    (call-process helm::pf-command nil
-                  (current-buffer) nil
-                  root)
-    (goto-char (point-min))
-    (loop while (not (eobp))
-          collect (prog1
-                      (buffer-substring-no-properties (point) (point-at-eol))
-                    (forward-line 1)))))
+(defun helm::pf-find-file (candidate)
+  (interactive)
+  (find-file (expand-file-name candidate
+                               (with-current-buffer (helm-candidate-buffer)
+                                 (cdr (assq 'project-root helm::pf-data))))))
 
-(defun helm::pf-find (arg)
+(defun helm::pf-get-source-buffer-name (root)
+  (format helm::pf-source-buffer-format root))
+
+(defun helm::pf-get-listing-command (root-data)
+  (cdr (assoc (car root-data) helm::pf-root-types)))
+
+(defun helm::project-files (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
 With universal prefix arg C-u, invalidate cache for current project first.
@@ -195,24 +223,34 @@ cached list of project files up-to-date.
 "
   (interactive "P")
   (when (consp arg)
-    (helm::pf-invalidate-cache (helm::pf-current-project)))
+    (helm::pf-invalidate-cache (helm::pf-root)))
   (let ((helm-ff-transformer-show-only-basename nil))
-    (helm :sources helm::pf-sources
+    (helm :sources (helm::pf-sources)
           :candidate-number-limit 10
           :buffer "*helm-project-find:*")))
 
 (defun helm::pf-invalidate-cache (root)
   "Invalidate the cached file-list for ROOT."
-  (interactive (let (keys
-                     (root (helm::pf-current-project)))
-                 (maphash (lambda (k v)
-                            (push k keys))
-                          helm::pf-cache)
-                 (list (helm-comp-read "project: " keys
+  (interactive (let ((regexp (replace-regexp-in-string
+                              "%s" "\\\\(.*\\\\)"
+                              (regexp-quote helm::pf-source-buffer-format)))
+                     (curr-root (helm::pf-root))
+                     roots)
+                 (mapc (lambda (buf)
+                         (with-current-buffer buf
+                           (let ((b-name (buffer-name)))
+                             (when (and helm::pf-data
+                                        (string-match regexp b-name))
+                               (push (match-string-no-properties 1 b-name) roots)))))
+                       (buffer-list))
+                 (require 'helm-mode)
+                 (list (helm-comp-read "project: " roots
                                        :must-match t
-                                       :preselect (and (member root keys)
-                                                       root)))))
-  (remhash root helm::pf-cache))
+                                       :preselect (and (member curr-root roots)
+                                                       curr-root)))))
+  (let ((buffer (helm::pf-get-source-buffer-name root)))
+    (and (buffer-live-p buffer)
+         (kill-buffer buffer))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
