@@ -11,16 +11,16 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun May 27 19:51:09 2012 (+0800)
+;; Last-Updated: Sun May 27 20:31:43 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 101
+;;     Update #: 108
 ;; URL: https://github.com/lewang/helm-project-files
 ;; Keywords: helm project file-list completion convenience cmd-t textmate slickedit
 ;; Compatibility:
 
 ;;; Installation:
 
-;; 1. install `helm-config' package: http://www.emacswiki.org/emacs/Anything#toc4
+;; 1. install `helm' from github
 ;;
 ;; 2. add to your config
 ;;
@@ -44,23 +44,23 @@
 
 ;;; Commentary:
 
-;; This is yet another cmd-t package.  Fast file-name completion from the current
-;; "project".  The concept of a "project" is configurable through
-;; `helm::pf-try-list'.
+;; This is yet another cmd-t package.  Fast file-name completion from the
+;; current "project".  The concept of a "project" is configurable through
+;; `helm::pf-root-types'.
 ;;
 ;; It's highly recommended that you add an helm source like recentf that keeps
 ;; track of recent files you're created.  This way, you don't have to worry
 ;; about your project cache being out of date, the files you edit using Emacs
 ;; appear through the recentf source.
 ;;
-;; In fact, `helm::pf-find' should be used as a drop-in
-;; replacement for `switch-to-buffer' or "C-x b".
+;; In fact, `helm::pf-find' should be used as a drop-in replacement for
+;; `switch-to-buffer' or "C-x b".
 ;;
-;; A word on ido style "flex" matching: meh.  I haven't found it very useful in my
-;; trials.  In a reasonably big list of files, I get all kinds of entries I
-;; didn't expect.  In order for it to be useful, I think other optimizations
-;; like Levenstein distance are needed.  I find helm's space separated
-;; regexps to be very fast.
+;; A word on ido style "flex" matching: meh.  I haven't found it very useful
+;; in my trials.  In a reasonably big list of files, I get all kinds of
+;; entries I didn't expect.  In order for it to be useful, other
+;; optimizations like Levenstein distance are needed.  I find helm's space
+;; separated regexps to be very fast.
 ;;
 ;;
 
@@ -100,12 +100,6 @@
 If the current file does not belong to a project then this path is used.
 ")
 
-(defvar helm::pf-try-list '(helm::pf-root-data)
-  "A list of functions run in the context of the current buffer with no parameters.
-
-The first path returned will be the current project path.
-")
-
 (defvar helm::pf-command "find_interesting"
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
 
@@ -138,16 +132,25 @@ helm::pf-source is a place-holder.
 (defvar helm::pf-source-buffer-format
   " *helm::pf source - [%s]*")
 
+(defun helm::pf-root (&optional buff)
+  "return project root of buffer as string"
+  (with-current-buffer (or buff
+                           helm-current-buffer
+                           (current-buffer))
+    (cdr (helm::pf-root-data))))
+
 (defun helm::pf-root-data (&optional file)
   "get project directory of file
 return (<repo type> . <root.)"
-  (setq file (or file (buffer-file-name)))
+  (setq file (or file
+                 default-directory))
   (let (res)
     (loop for hint-file in helm::pf-hints
-          when (and
-                (setq res (locate-dominating-file file hint-file))
-                (not (file-exists-p (expand-file-name helm::pf-anti-hint res))))
-          do (return (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file)) res)))))
+          do (when (setq res (locate-dominating-file file hint-file))
+               (when (file-exists-p (expand-file-name helm::pf-anti-hint res))
+                 (setq res helm::pf-default))
+               (return (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
+                             (directory-file-name res)))))))
 
 (defun helm::pf-sources ()
   "return a list of sources appropriate for use with helm.
@@ -180,22 +183,6 @@ helm::pf-source is replaced with an appropriate item .
     (setcar (memq 'helm::pf-source my-sources) my-source)
     my-sources))
 
-
-(defun helm::pf-root (&optional buff)
-  "return project root of buffer as string"
-  (with-current-buffer (or buff
-                           helm-current-buffer
-                           (current-buffer))
-    (let (res)
-      (dolist (func helm::pf-try-list)
-        (when (and (fboundp func)
-                   (setq res (funcall func)))
-          (return nil)))
-      (setq res (or res
-                    (helm::pf-root-data helm::pf-default)))
-      (and res
-           (directory-file-name
-            (expand-file-name (cdr res)))))))
 
 (defun helm::pf-find-file (candidate)
   (interactive)
