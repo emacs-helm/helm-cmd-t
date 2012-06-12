@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Mon May 28 00:09:24 2012 (+0800)
+;; Last-Updated: Tue Jun  5 23:07:48 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 126
+;;     Update #: 130
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -104,7 +104,7 @@ If the current file does not belong to a repo then this path is used.
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
 
 (defvar helm-cmd-t-repo-types
-  `((git . "git --no-pager ls-files --full-name -- %s")
+  `((git . "cd %s && git --no-pager ls-files --full-name")
     (hg . ,(concat helm-cmd-t-command " %s"))
     (bzr . ,(concat helm-cmd-t-command " %s"))
     (dir-locals.el . ,(concat helm-cmd-t-command " %s")))
@@ -155,6 +155,8 @@ return (<repo type> . <root.)"
                  (setq res (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
                                  (directory-file-name res))))
                (return)))
+    (unless res
+      (setq res (helm-cmd-t-root-data helm-cmd-t-default-repo)))
     (unless res
       (error "no repo root found."))
     res))
@@ -247,7 +249,7 @@ cached list of repo files up-to-date.
                                        :must-match t
                                        :preselect (and (member curr-root roots)
                                                        curr-root)))))
-  (let ((buffer (helm-cmd-t-get-source-buffer-name root)))
+  (let ((buffer (get-buffer (helm-cmd-t-get-source-buffer-name root))))
     (and (buffer-live-p buffer)
          (kill-buffer buffer))))
 
