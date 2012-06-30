@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Tue Jun  5 23:07:48 2012 (+0800)
+;; Last-Updated: Sat Jun 30 11:06:50 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 130
+;;     Update #: 163
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -123,7 +123,7 @@ this is an alist of (type . \"format-string\") the repo root is used to format t
                              helm-c-source-buffer-not-found)
   "list of sources for `helm-cmd-t-find'
 
-helm-cmd-t-source is a place-holder.
+`helm-cmd-t-source' is a place-holder.
 ")
 
 (defvar helm-cmd-t-anti-hint ".emacs-helm-no-spider"
@@ -161,6 +161,15 @@ return (<repo type> . <root.)"
       (error "no repo root found."))
     res))
 
+(defun helm-cmd-t-format-age (age)
+  "convert age in float to reasonable time explanation"
+  (cond ((< age 10)
+         "")
+        ((< age 3600)
+         (format " %i min ago" (ceiling (/ age 60))))
+        (t
+         (format " %.1f hours ago" (ceiling (/ age 3600))))))
+
 (defun helm-cmd-t-get-create-source (repo-root-data)
   "source for repo-root"
   (let* ((repo-root (cdr repo-root-data))
@@ -172,9 +181,17 @@ return (<repo type> . <root.)"
     (or my-source
         (with-current-buffer candidates-buffer
           (erase-buffer)
-          ;; hard code the git for testing
           (shell-command (format (helm-cmd-t-get-listing-command root-type) repo-root) t)
-          (setq my-source `((name . ,(format "repo files [%s]" repo-root))
+          (setq my-source `((name . "[%s] (%s files)")
+                            (header-name . ,(lexical-let ((candidates-buffer candidates-buffer)
+                                                          (repo-root repo-root)
+                                                          (root-type root-type))
+                                              #'(lambda (name-format)
+                                                  (let* ((age (- (float-time) (or (with-current-buffer candidates-buffer
+                                                                                    (cdr (assq 'time-stamp helm-cmd-t-data)))
+                                                                                  (float-time))))
+                                                         (age-str (helm-cmd-t-format-age age)))
+                                                    (format "[%s] (%s files%s)" repo-root root-type age-str)))))
                             (init . ,(lexical-let ((candidates-buffer candidates-buffer))
                                        #'(lambda ()
                                            (helm-candidate-buffer candidates-buffer))))
@@ -184,13 +201,14 @@ return (<repo type> . <root.)"
                             (action . helm-cmd-t-find-file)
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
-                                      (cons 'repo-root repo-root)))
+                                      (cons 'repo-root repo-root)
+                                      (cons 'time-stamp (float-time))))
           my-source))))
 
 (defun helm-cmd-t-sources ()
   "return a list of sources appropriate for use with helm.
 
-helm-cmd-t-source is replaced with an appropriate item .
+`helm-cmd-t-source' is replaced with an appropriate item .
 "
   (let* ((my-sources (append helm-cmd-t-sources '()))
          (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
