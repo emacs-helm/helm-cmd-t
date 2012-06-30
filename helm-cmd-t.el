@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Jun 30 16:04:03 2012 (+0800)
+;; Last-Updated: Sat Jun 30 19:26:25 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 188
+;;     Update #: 208
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -48,7 +48,7 @@
 ;; current "repository".  The concept of a "respository" is configurable through
 ;; `helm-cmd-t-repo-types'.
 ;;
-;; It's highly recommended that you add an helm source like recentf that keeps
+;; It's highly recommended that you add a helm source like recentf that keeps
 ;; track of recent files you're created.  This way, you don't have to worry
 ;; about your respository cache being out of date, the files you edit using Emacs
 ;; appear through the recentf source.
@@ -104,15 +104,17 @@ If the current file does not belong to a repo then this path is used.
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
 
 (defvar helm-cmd-t-repo-types
-  `((git . "cd %s && git --no-pager ls-files --full-name")
-    (hg . ,(concat helm-cmd-t-command " %s"))
-    (bzr . ,(concat helm-cmd-t-command " %s"))
+  `((git           . "cd %d && git --no-pager ls-files --full-name")
+    (hg            . "cd %d && hg manifest")
+    (bzr           . "cd %d && bzr ls --versioned")
     (dir-locals.el . ,(concat helm-cmd-t-command " %s")))
   "root types supported.
-this is an alist of (type . \"format-string\") the repo root is used to format the command ")
+this is an alist of (type . \"format-string\").
+
+\"%d\" is replaced with the project root in the format-string ")
 
 (defvar helm-cmd-t-cookies (mapcar (lambda (repo-type)
-                                 (concat "." (symbol-name (car repo-type))))
+                                     (cons (concat "." (symbol-name (car repo-type))) (car repo-type)))
                                helm-cmd-t-repo-types)
   "A list of files that mark the root of a repository")
 
@@ -126,7 +128,7 @@ this is an alist of (type . \"format-string\") the repo root is used to format t
 `helm-c-source-cmd-t' is a place-holder.
 ")
 
-(defvar helm-cmd-t-anti-hint ".emacs-helm-no-spider"
+(defvar helm-cmd-t-anti-cookie ".emacs-helm-no-spider"
   "Marker file that disqualifies a directory from being considered a repo.")
 
 (defvar helm-cmd-t-source-buffer-format
@@ -147,25 +149,34 @@ this is an alist of (type . \"format-string\") the repo root is used to format t
                            (current-buffer))
     (cdr (helm-cmd-t-root-data))))
 
+(defun helm-cmd-t-locate-dominating-files (dir cookies-data anti-cookies)
+  "return first ancestor that has any file in files"
+  (if (null dir)
+      nil)
+  (let (res)
+    (dolist (cookie-data cookies-data)
+      (let* ((cookie (car cookie-data))
+             (root (locate-dominating-file dir cookie)))
+        (when root
+          (push (cons cookie-data (expand-file-name root)) res))))
+    (sort res (lambda (a b)
+                (< (length (cdr a)) (length (cdr b)))))
+    (setq res (car res))
+    (setcar res (cdar res))
+    reso))
+
 (defun helm-cmd-t-root-data (&optional file)
   "get repo directory of file
 return (<repo type> . <root.)"
   (setq file (or file
                  default-directory))
   (let (res)
-    (loop for hint-file in helm-cmd-t-cookies
-          do (when (setq res (locate-dominating-file file hint-file))
-               (if (file-exists-p (expand-file-name helm-cmd-t-anti-hint res))
-                   (if (equal file helm-cmd-t-default-repo)
-                       (error "default repo %s is not valid" file)
-                     (setq res (helm-cmd-t-root-data helm-cmd-t-default-repo)))
-                 (setq res (cons (intern (replace-regexp-in-string "\\`\\.+" "" hint-file))
-                                 (directory-file-name res))))
-               (return)))
+    (setq res (helm-cmd-t-locate-dominating-files file helm-cmd-t-cookies helm-cmd-t-anti-cookie))
     (unless res
-      (setq res (helm-cmd-t-root-data helm-cmd-t-default-repo)))
-    (unless res
-      (error "no repo root found."))
+      (if helm-cmd-t-default-repo
+          (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie))
+        (when (null res)
+          (error "default repo %s is not valid" file))))
     res))
 
 (defun helm-cmd-t-format-age (age)
@@ -175,7 +186,7 @@ return (<repo type> . <root.)"
         ((< age 3600)
          (format " %i min ago" (ceiling (/ age 60))))
         (t
-         (format " %.1f hours ago" (ceiling (/ age 3600))))))
+         (format " %.1f hours ago" (/ age 3600)))))
 
 (defun helm-cmd-t-format-title (buffer)
   "format header line according to `helm-cmd-t-header-format'"
@@ -200,7 +211,7 @@ return (<repo type> . <root.)"
     (or my-source
         (with-current-buffer candidates-buffer
           (erase-buffer)
-          (shell-command (format (helm-cmd-t-get-listing-command repo-type) repo-root) t)
+          (shell-command (helm-cmd-t-get-listing-command repo-type repo-root) t)
           (setq my-source `((name . ,(format "[%s]" repo-root))
                             (header-name . (lambda (_)
                                              (helm-cmd-t-format-title ,candidates-buffer)))
@@ -237,13 +248,14 @@ return (<repo type> . <root.)"
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format root))
 
-(defun helm-cmd-t-get-listing-command (repo-type)
-  (cdr (assoc repo-type helm-cmd-t-repo-types)))
+(defun helm-cmd-t-get-listing-command (repo-type repo-root)
+  (format-spec (cdr (assoc repo-type helm-cmd-t-repo-types))
+               (format-spec-make ?d repo-root)))
 
 (defun helm-cmd-t (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
-With universal prefix arg C-u, invalidate cache for current repo first.
+With prefix arg \"-\", run `helm-cmd-t-invalidate-cache'.
 
 You can configure which sources are used through the
 `helm-cmd-t-sources' variable.
@@ -278,7 +290,7 @@ cached list of repo files up-to-date.
     res))
 
 (defvar helm-c-source-cmd-t-caches
-  `((name . "jCmd-t repo caches")
+  `((name . "Cmd-t repo caches")
     (candidates . helm-cmd-t-get-caches)
     (persistent-action . helm-c-switch-to-buffer)
     (persistent-help . "Show buffer")
@@ -286,12 +298,16 @@ cached list of repo files up-to-date.
     (volatile)))
 
 
-(defun helm-cmd-t-invalidate-cache ()
+(defun helm-cmd-t-invalidate-cache (root)
   "Invalidate the cached file-list for ROOT."
-  (interactive)
-  (let (curr-root (helm-cmd-t-root))
-    (helm :sources helm-c-source-cmd-t-caches
-          :preselect curr-root)))
+  (interactive
+   (let* ((curr-root (helm-cmd-t-root))
+          (source-buffer (get-buffer
+                          (helm-cmd-t-get-source-buffer-name curr-root))))
+     (helm :sources helm-c-source-cmd-t-caches
+           :preselect (when (buffer-live-p (get-buffer source-buffer))
+                        (helm-cmd-t-format-title source-buffer)))))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helm-cmd-t.el ends here
