@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Jun 30 11:06:50 2012 (+0800)
+;; Last-Updated: Sat Jun 30 16:04:03 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 163
+;;     Update #: 188
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -119,11 +119,11 @@ this is an alist of (type . \"format-string\") the repo root is used to format t
 (defvar helm-cmd-t-sources '(helm-c-source-buffers-list
                              helm-c-source-recentf
                              helm-c-source-files-in-current-dir
-                             helm-cmd-t-source
+                             helm-c-source-cmd-t
                              helm-c-source-buffer-not-found)
   "list of sources for `helm-cmd-t-find'
 
-`helm-cmd-t-source' is a place-holder.
+`helm-c-source-cmd-t' is a place-holder.
 ")
 
 (defvar helm-cmd-t-anti-hint ".emacs-helm-no-spider"
@@ -131,6 +131,13 @@ this is an alist of (type . \"format-string\") the repo root is used to format t
 
 (defvar helm-cmd-t-source-buffer-format
   " *helm-cmd-t source - [%s]*")
+
+(defvar helm-cmd-t-header-format
+  "[%r] (%t files%a)"
+  "format for project header
+  %r - project root
+  %t - type of repo
+  %a - age")
 
 (defun helm-cmd-t-root (&optional buff)
   "return repo root of buffer as string"
@@ -170,10 +177,22 @@ return (<repo type> . <root.)"
         (t
          (format " %.1f hours ago" (ceiling (/ age 3600))))))
 
+(defun helm-cmd-t-format-title (buffer)
+  "format header line according to `helm-cmd-t-header-format'"
+  (with-current-buffer buffer
+    (let* ((repo-root (cdr (assq 'repo-root helm-cmd-t-data)))
+           (repo-type (cdr (assq 'repo-type helm-cmd-t-data)))
+           (age (- (float-time) (or (cdr (assq 'time-stamp helm-cmd-t-data))
+                                    (float-time))))
+           (age-str (helm-cmd-t-format-age age)))
+      (format-spec helm-cmd-t-header-format (format-spec-make ?r repo-root
+                                                              ?t repo-type
+                                                              ?a age-str)))))
+
 (defun helm-cmd-t-get-create-source (repo-root-data)
   "source for repo-root"
   (let* ((repo-root (cdr repo-root-data))
-         (root-type (car repo-root-data))
+         (repo-type (car repo-root-data))
          (source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
          (candidates-buffer (get-buffer-create source-buffer-name))
          (my-source (with-current-buffer candidates-buffer
@@ -181,20 +200,12 @@ return (<repo type> . <root.)"
     (or my-source
         (with-current-buffer candidates-buffer
           (erase-buffer)
-          (shell-command (format (helm-cmd-t-get-listing-command root-type) repo-root) t)
-          (setq my-source `((name . "[%s] (%s files)")
-                            (header-name . ,(lexical-let ((candidates-buffer candidates-buffer)
-                                                          (repo-root repo-root)
-                                                          (root-type root-type))
-                                              #'(lambda (name-format)
-                                                  (let* ((age (- (float-time) (or (with-current-buffer candidates-buffer
-                                                                                    (cdr (assq 'time-stamp helm-cmd-t-data)))
-                                                                                  (float-time))))
-                                                         (age-str (helm-cmd-t-format-age age)))
-                                                    (format "[%s] (%s files%s)" repo-root root-type age-str)))))
-                            (init . ,(lexical-let ((candidates-buffer candidates-buffer))
-                                       #'(lambda ()
-                                           (helm-candidate-buffer candidates-buffer))))
+          (shell-command (format (helm-cmd-t-get-listing-command repo-type) repo-root) t)
+          (setq my-source `((name . ,(format "[%s]" repo-root))
+                            (header-name . (lambda (_)
+                                             (helm-cmd-t-format-title ,candidates-buffer)))
+                            (init . (lambda ()
+                                      (helm-candidate-buffer ,candidates-buffer)))
                             (candidates-in-buffer)
                             (match helm-c-match-on-file-name
                                    helm-c-match-on-directory-name)
@@ -202,17 +213,18 @@ return (<repo type> . <root.)"
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
                                       (cons 'repo-root repo-root)
+                                      (cons 'repo-type repo-type)
                                       (cons 'time-stamp (float-time))))
           my-source))))
 
 (defun helm-cmd-t-sources ()
   "return a list of sources appropriate for use with helm.
 
-`helm-cmd-t-source' is replaced with an appropriate item .
+`helm-c-source-cmd-t' is replaced with an appropriate item .
 "
   (let* ((my-sources (append helm-cmd-t-sources '()))
          (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
-    (setcar (memq 'helm-cmd-t-source my-sources) my-source)
+    (setcar (memq 'helm-c-source-cmd-t my-sources) my-source)
     my-sources))
 
 
@@ -225,8 +237,8 @@ return (<repo type> . <root.)"
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format root))
 
-(defun helm-cmd-t-get-listing-command (root-type)
-  (cdr (assoc root-type helm-cmd-t-repo-types)))
+(defun helm-cmd-t-get-listing-command (repo-type)
+  (cdr (assoc repo-type helm-cmd-t-repo-types)))
 
 (defun helm-cmd-t (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
@@ -248,29 +260,38 @@ cached list of repo files up-to-date.
           :candidate-number-limit 10
           :buffer "*helm-cmd-t:*")))
 
-(defun helm-cmd-t-invalidate-cache (root)
-  "Invalidate the cached file-list for ROOT."
-  (interactive (let ((regexp (replace-regexp-in-string
-                              "%s" "\\\\(.*\\\\)"
-                              (regexp-quote helm-cmd-t-source-buffer-format)))
-                     (curr-root (helm-cmd-t-root))
-                     roots)
-                 (mapc (lambda (buf)
-                         (with-current-buffer buf
-                           (let ((b-name (buffer-name)))
-                             (when (and helm-cmd-t-data
-                                        (string-match regexp b-name))
-                               (push (match-string-no-properties 1 b-name) roots)))))
-                       (buffer-list))
-                 (require 'helm-mode)
-                 (list (helm-comp-read "repo: " roots
-                                       :must-match t
-                                       :preselect (and (member curr-root roots)
-                                                       curr-root)))))
-  (let ((buffer (get-buffer (helm-cmd-t-get-source-buffer-name root))))
-    (and (buffer-live-p buffer)
-         (kill-buffer buffer))))
+(defun helm-cmd-t-get-caches ()
+  "return list of (display-text buffer) for caches suitable for completion"
+  (let ((regexp (replace-regexp-in-string
+                 "%s" "\\\\(.*\\\\)"
+                 (regexp-quote helm-cmd-t-source-buffer-format)))
+        res)
+    (mapc (lambda (buf)
+            (with-current-buffer buf
+              (let ((b-name (buffer-name)))
+                (when (and helm-cmd-t-data
+                           (string-match regexp b-name))
+                  (push (cons (helm-cmd-t-format-title buf)
+                              b-name)
+                        res)))))
+          (buffer-list))
+    res))
 
+(defvar helm-c-source-cmd-t-caches
+  `((name . "jCmd-t repo caches")
+    (candidates . helm-cmd-t-get-caches)
+    (persistent-action . helm-c-switch-to-buffer)
+    (persistent-help . "Show buffer")
+    (action . (("invalidate" . helm-kill-marked-buffers)))
+    (volatile)))
+
+
+(defun helm-cmd-t-invalidate-cache ()
+  "Invalidate the cached file-list for ROOT."
+  (interactive)
+  (let (curr-root (helm-cmd-t-root))
+    (helm :sources helm-c-source-cmd-t-caches
+          :preselect curr-root)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helm-cmd-t.el ends here
