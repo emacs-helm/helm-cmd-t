@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Tue Jul 17 23:34:40 2012 (+0800)
+;; Last-Updated: Wed Jul 18 00:28:46 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 297
+;;     Update #: 298
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -324,7 +324,7 @@ return (<repo type> . <root.)"
 (defun helm-cmd-t (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
-With prefix arg \"-\", run `helm-cmd-t-invalidate-cache'.
+With prefix arg \"-\", run `helm-cmd-t-caches'.
 
 You can configure which sources are used through the
 `helm-cmd-t-sources' variable.
@@ -335,7 +335,7 @@ cached list of repo files up-to-date.
 "
   (interactive "P")
   (when (eq arg '-)
-    (call-interactively 'helm-cmd-t-invalidate-cache))
+    (call-interactively 'helm-cmd-t-caches))
   (let ((helm-ff-transformer-show-only-basename nil))
     (helm :sources (helm-cmd-t-sources)
           :candidate-number-limit 10
