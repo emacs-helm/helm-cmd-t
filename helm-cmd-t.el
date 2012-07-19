@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jul 18 00:28:46 2012 (+0800)
+;; Last-Updated: Thu Jul 19 13:46:53 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 298
+;;     Update #: 302
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -313,7 +313,7 @@ return (<repo type> . <root.)"
                                  (cdr (assq 'repo-root helm-cmd-t-data))))))
 
 (defun helm-cmd-t-get-source-buffer-name (root)
-  (format helm-cmd-t-source-buffer-format root))
+  (format helm-cmd-t-source-buffer-format (file-name-as-directory root)))
 
 (defun helm-cmd-t-insert-listing (repo-type repo-root)
   (let ((cmd (cdr (assoc repo-type helm-cmd-t-repo-types))))
@@ -370,9 +370,9 @@ cached list of repo files up-to-date.
 (defun helm-cmd-t-cache (&optional root)
   "Manage helm-cmd-t caches."
   (interactive)
-  (let ((root (or root (helm-cmd-t-root)))
-        (source-buffer (get-buffer
-                        (helm-cmd-t-get-source-buffer-name root))))
+  (let* ((root (or root (helm-cmd-t-root)))
+         (source-buffer (get-buffer
+                         (helm-cmd-t-get-source-buffer-name root))))
     (if (called-interactively-p 'any)
         (helm :sources helm-c-source-cmd-t-caches
               :preselect (when source-buffer
