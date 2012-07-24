@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Jul 19 13:46:53 2012 (+0800)
+;; Last-Updated: Tue Jul 24 23:27:00 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 302
+;;     Update #: 311
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -26,39 +26,38 @@
 ;;
 ;;      (require 'helm-config)
 ;;      (require 'helm-cmd-t)
-;;      (define-key (current-global-map) [remap switch-to-buffer] 'helm-cmd-t)
+;;      (global-set-key (kbd "M-t") 'helm-cmd-t)
 ;;
-;; 3. additional optional helm-config settings
+;; 3. additional optional helm settings to make helm more responsive.
 ;;
 ;;      (setq helm-ff-lynx-style-map nil
 ;;            helm-input-idle-delay 0.1
 ;;            helm-idle-delay 0.1
 ;;      )
 ;;
-;; 4. read the self-documenting code for additional configuration options.
+;; 4. have a look at helm-C-x-b.el for more examples of how to use the
+;;    `helm-cmd-t' source in your own buffers.
+;;
+;; 5. read the self-documenting code for additional configuration options.
 ;;
 
 
 ;;; Commentary:
 
-;; This is yet another cmd-t package.  Fast file-name completion from the
-;; current "repository".  The concept of a "respository" is configurable through
-;; `helm-cmd-t-repo-types'.
+;; This package provides a helm source for repository (git, hg, etc) based
+;; file selection.  The emphasis is on fast file-name completion.  The concept
+;; of a "respository" is configurable through `helm-cmd-t-repo-types'.
 ;;
-;; It's highly recommended that you add a helm source like recentf that keeps
-;; track of recent files you're created.  This way, you don't have to worry
-;; about your respository cache being out of date, the files you edit using Emacs
-;; appear through the recentf source.
+;; Each repository is cached for fast access (see
+;; `helm-cmd-t-cache-threshhold'), and in the future, options will be
+;; available to interact with the repository (i.e. grep, etc).
 ;;
-;; In fact, `helm-cmd-t' should be used as a drop-in replacement for
-;; `switch-to-buffer' or "C-x b".
-;;
-;; A word on ido style "flex" matching: meh.  I haven't found it very useful
-;; in my trials.  In a reasonably big list of files, I get all kinds of
-;; entries I didn't expect.  In order for it to be useful, other
-;; optimizations like Levenstein distance are needed.  I find helm's space
-;; separated regexps to be very fast.
-;;
+;; `helm-cmd-t' is the simple predefined command that opens a file in the
+;; current repository, however, it's highly recommended that you add a helm
+;; source like recentf that keeps track of recent files you've worked with.
+;; This way, you don't have to worry about your respository cache being out of
+;; sync.  See "helm-C-x-b.el" for an example of a custom drop-in
+;; replacement for `switch-to-buffer' or "C-x b".
 ;;
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -155,16 +154,6 @@ as its parameter. ")
                                helm-cmd-t-repo-types)
   "A list of files that mark the root of a repository")
 
-(defvar helm-cmd-t-sources '(helm-c-source-buffers-list
-                             helm-c-source-session
-                             helm-c-source-files-in-current-dir
-                             helm-c-source-cmd-t
-                             helm-c-source-buffer-not-found)
-  "list of sources for `helm-cmd-t-find'
-
-`helm-c-source-cmd-t' is a place-holder.
-")
-
 (defvar helm-cmd-t-anti-cookie ".emacs-helm-no-spider"
   "Marker file that disqualifies a directory from being considered a repo.")
 
@@ -219,8 +208,7 @@ return (<repo type> . <root.)"
     (unless res
       (if helm-cmd-t-default-repo
           (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie))
-        (when (null res)
-          (error "default repo %s is not valid" file))))
+        (error "Appropriate repo not found, no default repo defined..")))
     res))
 
 (defun helm-cmd-t-format-age (age)
@@ -295,17 +283,6 @@ return (<repo type> . <root.)"
                                       (cons 'lines (count-lines (point-min) (point-max)))))
           my-source))))
 
-(defun helm-cmd-t-sources ()
-  "return a list of sources appropriate for use with helm.
-
-`helm-c-source-cmd-t' is replaced with an appropriate item .
-"
-  (let* ((my-sources (append helm-cmd-t-sources '()))
-         (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
-    (setcar (memq 'helm-c-source-cmd-t my-sources) my-source)
-    my-sources))
-
-
 (defun helm-cmd-t-find-file (candidate)
   "find file"
   (find-file (expand-file-name candidate
@@ -322,23 +299,16 @@ return (<repo type> . <root.)"
       (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
 
 (defun helm-cmd-t (arg)
-  "This command is designed to be a drop-in replacement for switch to buffer.
+  "Choose file from current repo.
 
 With prefix arg \"-\", run `helm-cmd-t-caches'.
-
-You can configure which sources are used through the
-`helm-cmd-t-sources' variable.
-
-It is important to add a source that keeps track of files you
-work with (e.g. `recentf').  This way, you don't have to worry about keeping the
-cached list of repo files up-to-date.
 "
   (interactive "P")
   (when (eq arg '-)
     (call-interactively 'helm-cmd-t-caches))
   (let ((helm-ff-transformer-show-only-basename nil))
-    (helm :sources (helm-cmd-t-sources)
-          :candidate-number-limit 10
+    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
+          :candidate-number-limit 20
           :buffer "*helm-cmd-t:*")))
 
 (defun helm-cmd-t-get-caches ()
