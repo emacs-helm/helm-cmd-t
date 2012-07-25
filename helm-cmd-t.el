@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jul 25 23:01:14 2012 (+0800)
+;; Last-Updated: Wed Jul 25 23:16:29 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 318
+;;     Update #: 322
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -138,7 +138,7 @@ see `grep-find-ignored-files' for inspiration."
   `(("git"           . "cd %d && git --no-pager ls-files --full-name")
     ("hg"            . "cd %d && hg manifest")
     ("bzr"           . "cd %d && bzr ls --versioned")
-    ("dir-locals.el" . helm-cmd-t-elisp-find-insert))
+    ("dir-locals.el" . helm-cmd-t-get-find))
   "root types supported.
 this is an alist of (type . \"format-string\").
 
@@ -370,6 +370,15 @@ With prefix arg \"-\", run `helm-cmd-t-repos'.
     (goto-char (point-min))
     (while (re-search-forward "^\\./?\n?" nil t)
       (replace-match "" nil nil))))
+
+
+(defun helm-cmd-t-get-find (root)
+  "defer to `helm-cmd-t-elisp-find-insert' or `helm-cmd-t-shell-find-insert'
+based on system type.
+"
+  (if (eq system-type 'windows-nt)
+      (helm-cmd-t-elisp-find-insert root)
+    (helm-cmd-t-shell-find-insert root)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helm-cmd-t.el ends here
