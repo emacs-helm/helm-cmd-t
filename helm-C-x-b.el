@@ -13,20 +13,22 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 7
+;;     Update #: 8
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
 
 ;;; Installation:
 
+;; (require 'helm-C-x-b)
 ;;
-;;
+;; (global-set-key [remap switch-to-buffer] 'helm-C-x-b)
 ;;
 
 ;;; Commentary:
 
-;;
+;; This is a demonstration of how to use the helm-cmd-t source to form your
+;; own choose-dwim-command.
 ;;
 ;;
 
@@ -58,10 +60,10 @@
 (provide 'helm-C-x-b)
 
 (defvar helm-C-x-b-sources '(helm-c-source-buffers-list
-                           helm-c-source-session
-                           helm-c-source-files-in-current-dir
-                           helm-c-source-cmd-t
-                           helm-c-source-buffer-not-found)
+                             helm-c-source-session
+                             helm-c-source-files-in-current-dir
+                             helm-c-source-cmd-t
+                             helm-c-source-buffer-not-found)
   "list of sources used for selecting files.
 
 This could be used as a drop-in replacement for `switch-to-buffer'.
