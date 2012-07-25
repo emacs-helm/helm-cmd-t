@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 2
+;;     Update #: 4
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -57,7 +57,7 @@
 
 (provide 'helm-C-x-b)
 
-(defvar helm-cmd-t-C-x-b '(helm-c-source-buffers-list
+(defvar helm-C-x-b-sources '(helm-c-source-buffers-list
                            helm-c-source-session
                            helm-c-source-files-in-current-dir
                            helm-c-source-cmd-t
@@ -71,25 +71,25 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 
 
 
-(defun helm-cmd-t-C-x-b-sources ()
+(defun helm-C-x-b-sources ()
   "construct list of sources based on `helm-cmd-t-C-x-b-sources'.
 
 `helm-c-source-cmd-t' is replaced with an appropriate item .
 "
-  (let* ((my-sources (append helm-cmd-t-sources '()))
+  (let* ((my-sources (append helm-C-x-b-sources '()))
          (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
     (setcar (memq 'helm-c-source-cmd-t my-sources) my-source)
     my-sources))
 
 
-(defun helm-cmd-t-C-x-b (arg)
+(defun helm-C-x-b (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
-With prefix arg \"-\", run `helm-cmd-t-caches'.
+With prefix arg \"-\", run `helm-cmd-t-repos'.
 "
   (interactive "P")
   (when (eq arg '-)
-    (call-interactively 'helm-cmd-t-caches))
+    (call-interactively 'helm-cmd-t-repos))
   (let ((helm-ff-transformer-show-only-basename nil))
     (helm :sources (helm-cmd-t-C-x-b-sources)
           :candidate-number-limit 20
