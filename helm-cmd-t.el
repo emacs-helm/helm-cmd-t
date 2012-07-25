@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Tue Jul 24 23:27:00 2012 (+0800)
+;; Last-Updated: Tue Jul 24 23:39:13 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 311
+;;     Update #: 314
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -302,11 +302,11 @@ return (<repo type> . <root.)"
 (defun helm-cmd-t (arg)
   "Choose file from current repo.
 
-With prefix arg \"-\", run `helm-cmd-t-caches'.
+With prefix arg \"-\", run `helm-cmd-t-repos'.
 "
   (interactive "P")
   (when (eq arg '-)
-    (call-interactively 'helm-cmd-t-caches))
+    (call-interactively 'helm-cmd-t-repos))
   (let ((helm-ff-transformer-show-only-basename nil))
     (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
           :candidate-number-limit 20
@@ -338,7 +338,7 @@ With prefix arg \"-\", run `helm-cmd-t-caches'.
     (volatile)))
 
 
-(defun helm-cmd-t-cache (&optional root)
+(defun helm-cmd-t-repos (&optional root)
   "Manage helm-cmd-t caches."
   (interactive)
   (let* ((root (or root (helm-cmd-t-root)))
