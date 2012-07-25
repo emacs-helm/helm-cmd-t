@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jul 25 22:39:35 2012 (+0800)
+;; Last-Updated: Wed Jul 25 23:01:14 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 317
+;;     Update #: 318
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -275,7 +275,7 @@ return (<repo type> . <root.)"
                             (candidates-in-buffer)
                             (match helm-c-match-on-file-name
                                    helm-c-match-on-directory-name)
-                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))
+                            (action . helm-cmd-t-find-file)
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
                                       (cons 'repo-root repo-root)
