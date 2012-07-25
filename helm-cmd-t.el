@@ -86,6 +86,7 @@
 
 (provide 'helm-cmd-t)
 (require 'helm-config)
+(require 'helm-locate)
 
 (defcustom helm-cmd-t-cache-threshhold 1000
   "If a repo has more entries than this value it will be cached.
@@ -274,7 +275,7 @@ return (<repo type> . <root.)"
                             (candidates-in-buffer)
                             (match helm-c-match-on-file-name
                                    helm-c-match-on-directory-name)
-                            (action . helm-cmd-t-find-file)
+                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))
                             (type . file)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
                                       (cons 'repo-root repo-root)
