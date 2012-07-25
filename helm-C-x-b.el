@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 4
+;;     Update #: 7
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -72,7 +72,7 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 
 
 (defun helm-C-x-b-sources ()
-  "construct list of sources based on `helm-cmd-t-C-x-b-sources'.
+  "construct list of sources based on `helm-C-x-b-sources'.
 
 `helm-c-source-cmd-t' is replaced with an appropriate item .
 "
@@ -88,14 +88,14 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 With prefix arg \"-\", run `helm-cmd-t-repos'.
 "
   (interactive "P")
-  (when (eq arg '-)
-    (call-interactively 'helm-cmd-t-repos))
-  (let ((helm-ff-transformer-show-only-basename nil))
-    (helm :sources (helm-cmd-t-C-x-b-sources)
-          :candidate-number-limit 20
-          :buffer "*helm-cmd-t:*")))
+  (if (eq arg '-)
+      (call-interactively 'helm-cmd-t-repos)
+    (let ((helm-ff-transformer-show-only-basename nil))
+      (helm :sources (helm-C-x-b-sources)
+            :candidate-number-limit 20
+            :buffer "*helm-cmd-t:*"))))
 
 
 
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;;; helm-C-x-b.el ends here
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; helm-C-x-b.el ends here

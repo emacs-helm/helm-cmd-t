@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Tue Jul 24 23:39:13 2012 (+0800)
+;; Last-Updated: Wed Jul 25 22:39:35 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 314
+;;     Update #: 317
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -36,7 +36,7 @@
 ;;      )
 ;;
 ;; 4. have a look at helm-C-x-b.el for more examples of how to use the
-;;    `helm-cmd-t' source in your own buffers.
+;;    `helm-cmd-t' source to craft your own master file chooser.
 ;;
 ;; 5. read the self-documenting code for additional configuration options.
 ;;
@@ -305,12 +305,12 @@ return (<repo type> . <root.)"
 With prefix arg \"-\", run `helm-cmd-t-repos'.
 "
   (interactive "P")
-  (when (eq arg '-)
-    (call-interactively 'helm-cmd-t-repos))
-  (let ((helm-ff-transformer-show-only-basename nil))
-    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
-          :candidate-number-limit 20
-          :buffer "*helm-cmd-t:*")))
+  (if (eq arg '-)
+      (call-interactively 'helm-cmd-t-repos)
+    (let ((helm-ff-transformer-show-only-basename nil))
+      (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
+            :candidate-number-limit 20
+            :buffer "*helm-cmd-t:*"))))
 
 (defun helm-cmd-t-get-caches ()
   "return list of (display-text buffer) for caches suitable for completion"
