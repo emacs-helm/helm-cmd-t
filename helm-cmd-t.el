@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jul 25 23:16:29 2012 (+0800)
+;; Last-Updated: Fri Jul 27 00:23:43 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 322
+;;     Update #: 327
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -87,6 +87,7 @@
 (provide 'helm-cmd-t)
 (require 'helm-config)
 (require 'helm-locate)
+(require 'helm-files)
 
 (defcustom helm-cmd-t-cache-threshhold 1000
   "If a repo has more entries than this value it will be cached.
@@ -242,6 +243,17 @@ return (<repo type> . <root.)"
                                                               ?t repo-type
                                                               ?a age-str
                                                               ?l lines)))))
+(defun helm-cmd-t-transform-candidates (candidates source)
+  "convert each candidate to cons of (disp . real)"
+  (loop with root = (with-current-buffer (helm-candidate-buffer)
+                      (cdr (assq 'repo-root helm-cmd-t-data)))
+        for i in candidates
+        for abs = (expand-file-name i root)
+        for disp = (if (and helm-ff-transformer-show-only-basename
+                            (not (helm-dir-is-dot i)))
+                       (helm-c-basename i)
+                     i)
+        collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
 (defun helm-cmd-t-get-create-source (repo-root-data)
   "source for repo-root"
@@ -273,22 +285,18 @@ return (<repo type> . <root.)"
                             (init . (lambda ()
                                       (helm-candidate-buffer ,candidates-buffer)))
                             (candidates-in-buffer)
+                            (keymap . ,helm-generic-files-map)
                             (match helm-c-match-on-file-name
                                    helm-c-match-on-directory-name)
-                            (action . helm-cmd-t-find-file)
-                            (type . file)))
+                            (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
+                            (action-transformer helm-c-transform-file-load-el)
+                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
                                       (cons 'repo-root repo-root)
                                       (cons 'repo-type repo-type)
                                       (cons 'time-stamp (float-time))
                                       (cons 'lines (count-lines (point-min) (point-max)))))
           my-source))))
-
-(defun helm-cmd-t-find-file (candidate)
-  "find file"
-  (find-file (expand-file-name candidate
-                               (with-current-buffer (helm-candidate-buffer)
-                                 (cdr (assq 'repo-root helm-cmd-t-data))))))
 
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format (file-name-as-directory root)))
