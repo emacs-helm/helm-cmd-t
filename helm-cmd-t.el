@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Sep 27 22:56:59 2012 (+0800)
+;; Last-Updated: Thu Sep 27 23:05:40 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 341
+;;     Update #: 343
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -201,17 +201,23 @@ return (<repo type> . <root.>)"
     (when best-root
       (cons best-type best-root))))
 
-(defun helm-cmd-t-root-data (&optional file)
+(defun helm-cmd-t-root-data (&optional file no-default)
   "get repo directory of file
-return (<repo type> . <root.)"
+return (<repo type> . <root>)
+
+if NO-DEFAULT is specified, don't look for the default.
+
+return NIL if no root found."
   (setq file (or file
                  default-directory))
-  (let (res)
+  (let ((helm-cmd-t-default-repo (if no-default
+                                     nil
+                                   helm-cmd-t-default-repo))
+        res)
     (setq res (helm-cmd-t-locate-dominating-files file helm-cmd-t-cookies helm-cmd-t-anti-cookie))
-    (unless res
-      (if helm-cmd-t-default-repo
-          (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie))
-        (error "Appropriate repo not found, no default repo defined..")))
+    (when (and (not res)
+               helm-cmd-t-default-repo)
+      (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie)))
     res))
 
 (defun helm-cmd-t-format-age (age)
