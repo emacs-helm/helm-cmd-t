@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Sep 27 21:44:23 2012 (+0800)
+;; Last-Updated: Thu Sep 27 22:56:59 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 338
+;;     Update #: 341
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -362,11 +362,12 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
         (kill-buffer source-buffer)))))
 
 ;;; TODO: figure out grep for other types of repos
-(defun helm-cmd-t-grep (cache-buffer)
-  (interactive (list (current-buffer)))
+(defun helm-cmd-t-grep (cache-buffer &optional globs)
+  (interactive (list (current-buffer)
+                     (read-string "OnlyExt(e.g. *.rb *.erb): ")))
   (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -e %p %f")
          helm-c-grep-default-recurse-command
-         (files (list "--" (read-string "OnlyExt(e.g. *.rb *.erb): ")))
+         (globs (list "--" globs))
          ;; Expand filename of each candidate with the git root dir.
          ;; The filename will be in the help-echo prop.
          (helm-c-grep-default-directory-fn 'helm-cmd-t-root)
@@ -374,7 +375,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
          (helm-ff-default-directory (helm-cmd-t-root cache-buffer)))
-    (helm-do-grep-1 files)))
+    (helm-do-grep-1 globs)))
 
 (defun helm-cmd-t-for-buffer (buffer)
   "used as action from `helm-cmd-t-repos' "
