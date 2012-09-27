@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 8
+;;     Update #: 9
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -87,10 +87,10 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 (defun helm-C-x-b (arg)
   "This command is designed to be a drop-in replacement for switch to buffer.
 
-With prefix arg \"-\", run `helm-cmd-t-repos'.
+With universal prefix arg (C-u), run `helm-cmd-t-repos'.
 "
   (interactive "P")
-  (if (eq arg '-)
+  (if (consp arg)
       (call-interactively 'helm-cmd-t-repos)
     (let ((helm-ff-transformer-show-only-basename nil))
       (helm :sources (helm-C-x-b-sources)

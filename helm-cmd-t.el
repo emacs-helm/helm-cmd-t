@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Fri Jul 27 00:23:43 2012 (+0800)
+;; Last-Updated: Thu Sep 27 21:44:23 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 327
+;;     Update #: 338
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -88,6 +88,7 @@
 (require 'helm-config)
 (require 'helm-locate)
 (require 'helm-files)
+(require 'helm-grep)
 
 (defcustom helm-cmd-t-cache-threshhold 1000
   "If a repo has more entries than this value it will be cached.
@@ -307,13 +308,13 @@ return (<repo type> . <root.)"
         (funcall cmd repo-root)
       (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
 
-(defun helm-cmd-t (arg)
+(defun helm-cmd-t (&optional arg)
   "Choose file from current repo.
 
-With prefix arg \"-\", run `helm-cmd-t-repos'.
+With prefix arg C-u, run `helm-cmd-t-repos'.
 "
   (interactive "P")
-  (if (eq arg '-)
+  (if (consp arg)
       (call-interactively 'helm-cmd-t-repos)
     (let ((helm-ff-transformer-show-only-basename nil))
       (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
@@ -342,9 +343,10 @@ With prefix arg \"-\", run `helm-cmd-t-repos'.
     (candidates . helm-cmd-t-get-caches)
     (persistent-action . helm-c-switch-to-buffer)
     (persistent-help . "Show buffer")
-    (action . (("INVALIDATE" . helm-kill-marked-buffers)))
+    (action . (("cmd-t" . helm-cmd-t-for-buffer)
+               ("git grep" .   helm-cmd-t-grep)
+               ("INVALIDATE" . helm-kill-marked-buffers)))
     (volatile)))
-
 
 (defun helm-cmd-t-repos (&optional root)
   "Manage helm-cmd-t caches."
@@ -358,6 +360,26 @@ With prefix arg \"-\", run `helm-cmd-t-repos'.
                            (helm-cmd-t-format-title source-buffer)))
       (when source-buffer
         (kill-buffer source-buffer)))))
+
+;;; TODO: figure out grep for other types of repos
+(defun helm-cmd-t-grep (cache-buffer)
+  (interactive (list (current-buffer)))
+  (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -e %p %f")
+         helm-c-grep-default-recurse-command
+         (files (list "--" (read-string "OnlyExt(e.g. *.rb *.erb): ")))
+         ;; Expand filename of each candidate with the git root dir.
+         ;; The filename will be in the help-echo prop.
+         (helm-c-grep-default-directory-fn 'helm-cmd-t-root)
+         ;; `helm-c-grep-init' initialize `default-directory' to this value,
+         ;; So set this value (i.e `helm-ff-default-directory') to
+         ;; something else.
+         (helm-ff-default-directory (helm-cmd-t-root cache-buffer)))
+    (helm-do-grep-1 files)))
+
+(defun helm-cmd-t-for-buffer (buffer)
+  "used as action from `helm-cmd-t-repos' "
+  (with-current-buffer buffer
+    (helm-cmd-t)))
 
 (defun helm-cmd-t-elisp-find-insert (root)
   "insert contents of directory recursively."
