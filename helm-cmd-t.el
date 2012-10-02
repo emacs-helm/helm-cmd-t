@@ -164,7 +164,7 @@ as its parameter. ")
   " *helm-cmd-t source - [%s]*")
 
 (defvar helm-cmd-t-header-format
-  "[%r] (%l in %t%a)"
+  "[%r] (%l in %t repo%a)"
   "format for project header
   %r - project root
   %t - type of repo
