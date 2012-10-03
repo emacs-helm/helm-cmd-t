@@ -208,18 +208,26 @@ return (<repo type> . <root>)
 
 if NO-DEFAULT is specified, don't look for the default.
 
-return NIL if no root found."
-  (setq file (or file
-                 default-directory))
-  (let ((helm-cmd-t-default-repo (if no-default
-                                     nil
-                                   helm-cmd-t-default-repo))
-        res)
-    (setq res (helm-cmd-t-locate-dominating-files file helm-cmd-t-cookies helm-cmd-t-anti-cookie))
-    (when (and (not res)
-               helm-cmd-t-default-repo)
-      (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie)))
-    res))
+return NIL if no root found.
+
+If `helm-cmd-d-t-data' is defined and no parameters are
+specified, then it is used to construct the root-data. "
+  (if (and (null file)
+           (null no-default)
+           helm-cmd-t-data)
+      (cons (cdr (assq 'repo-type helm-cmd-t-data))
+            (cdr (assq 'repo-root helm-cmd-t-data)))
+    (setq file (or file
+                   default-directory))
+    (let ((helm-cmd-t-default-repo (if no-default
+                                       nil
+                                     helm-cmd-t-default-repo))
+          res)
+      (setq res (helm-cmd-t-locate-dominating-files file helm-cmd-t-cookies helm-cmd-t-anti-cookie))
+      (when (and (not res)
+                 helm-cmd-t-default-repo)
+        (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie)))
+      res)))
 
 (defun helm-cmd-t-format-age (age)
   "convert age in float to reasonable time explanation"
@@ -309,6 +317,24 @@ return NIL if no root found."
                                       (cons 'lines (count-lines (point-min) (point-max)))))
           my-source))))
 
+(defun helm-cmd-t-get-create-source-dir (dir)
+  "create a source from DIR, coercing if necessary."
+  (helm-cmd-t-get-create-source (helm-cmd-t-make-root dir)))
+
+(defun helm-cmd-t-make-root (dir)
+  "If DIR is a natural repo root, return its data.
+
+Else, force DIR to be a blank repo type.
+
+This is a convenience function for external libraries."
+  (unless (file-directory-p dir)
+    (error (format "\"%s\" is not a directory." dir)))
+  (setq dir (file-name-as-directory dir))
+  (let ((root-data (helm-cmd-t-root-data dir)))
+    (if (equal dir (cdr root-data))
+        root-data
+      (cons "" dir))))
+
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format (file-name-as-directory root)))
 
@@ -353,8 +379,8 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
     (candidates . helm-cmd-t-get-caches)
     (persistent-action . helm-c-switch-to-buffer)
     (persistent-help . "Show buffer")
-    (action . (("cmd-t" . helm-cmd-t-for-buffer)
-               ("git grep" .   helm-cmd-t-grep)
+    (action . (("cmd-t"      . helm-cmd-t-for-buffer)
+               ("git grep"   .   helm-cmd-t-grep)
                ("INVALIDATE" . helm-kill-marked-buffers)))
     (volatile)))
 
