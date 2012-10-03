@@ -165,7 +165,7 @@ as its parameter. ")
   " *helm-cmd-t source - [%s]*")
 
 (defvar helm-cmd-t-header-format
-  "[%r] (%l in %trepo%a)"
+  "[%r] (%l in %t %a)"
   "format for project header
   %r - project root
   %t - type of repo
@@ -255,8 +255,9 @@ specified, then it is used to construct the root-data. "
            (age-str (helm-cmd-t-format-age age))
            (lines (helm-cmd-t-format-lines
                    (cdr (assq 'lines helm-cmd-t-data)))))
-      (when (not (zerop (length repo-type)))
-        (setq repo-type (concat repo-type " ")))
+      (setq repo-type (if (zerop (length repo-type))
+                          "dir"
+                        (concat repo-type " repo")))
       (format-spec helm-cmd-t-header-format (format-spec-make ?r repo-root
                                                               ?t repo-type
                                                               ?a age-str
