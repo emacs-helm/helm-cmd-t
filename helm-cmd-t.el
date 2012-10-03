@@ -285,6 +285,7 @@ return NIL if no root found."
     (or my-source
         (with-current-buffer candidates-buffer
           (erase-buffer)
+          (setq default-directory (file-name-as-directory repo-root))
           (helm-cmd-t-insert-listing repo-type repo-root)
           (setq my-source `((name . ,(format "[%s]" (abbreviate-file-name repo-root)))
                             (header-name . (lambda (_)
@@ -394,15 +395,13 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (let ((reject-regexp (helm-cmd-t-dumb-glob-to-regexp (append
                                                         helm-cmd-t-find-ignored-files
                                                         helm-cmd-t-find-prunes
-                                                        '("." ".."))))
-        (default-directory (expand-file-name root)))
+                                                        '("." "..")))))
     (helm-cmd-t-insert-tree-1 nil reject-regexp)))
 
 (defun helm-cmd-t-shell-find-insert (root)
   (let ((cmd (let ((default-directory "."))
                (find-cmd `(prune (name ,@helm-cmd-t-find-prunes))
-                         `(not (name ,@helm-cmd-t-find-ignored-files)))))
-        (default-directory root))
+                         `(not (name ,@helm-cmd-t-find-ignored-files))))))
     (shell-command cmd t)
     (goto-char (point-min))
     (while (re-search-forward "^\\./?\n?" nil t)
