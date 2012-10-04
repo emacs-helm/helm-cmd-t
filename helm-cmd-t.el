@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Oct  4 22:05:46 2012 (+0800)
+;; Last-Updated: Thu Oct  4 23:04:45 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 350
+;;     Update #: 351
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -160,7 +160,7 @@ as its parameter. ")
   " *helm-cmd-t source - [%s]*")
 
 (defvar helm-cmd-t-header-format
-  "[%r] (%l in %t %a)"
+  "[%r] (%l in %t%a)"
   "format for project header
   %r - project root
   %t - type of repo
