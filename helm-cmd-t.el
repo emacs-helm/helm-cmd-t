@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Sep 27 23:05:40 2012 (+0800)
+;; Last-Updated: Thu Oct  4 22:05:46 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 343
+;;     Update #: 350
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -153,11 +153,6 @@ format string can also be symbol that takes:
 
 as its parameter. ")
 
-(defvar helm-cmd-t-cookies (mapcar (lambda (repo-type)
-                                     (cons (nth 1 repo-type) (car repo-type)))
-                               helm-cmd-t-repo-types)
-  "A list of files that mark the root of a repository")
-
 (defvar helm-cmd-t-anti-cookie ".emacs-helm-no-spider"
   "Marker file that disqualifies a directory from being considered a repo.")
 
@@ -180,7 +175,7 @@ as its parameter. ")
                            (current-buffer))
     (cdr (helm-cmd-t-root-data))))
 
-(defun helm-cmd-t-locate-dominating-files (dir cookies-data anti-cookie)
+(defun helm-cmd-t-get-repo-root (dir)
   "return first ancestor that has any file in files
 return (<repo type> . <root.>)"
   (if (null dir)
@@ -189,18 +184,23 @@ return (<repo type> . <root.>)"
         best-type
         cookie
         root)
-    (dolist (cookie-data cookies-data)
-      (setq cookie (car cookie-data)
+    (dolist (cookie-data helm-cmd-t-repo-types)
+      (setq cookie (nth 1 cookie-data)
             root   dir)
-      (loop while (and (setq root (locate-dominating-file root cookie))
-                       (file-exists-p (expand-file-name anti-cookie root))
+      (loop while (and (setq root (helm-cmd-t-locate-dominating-file root cookie))
+                       (file-exists-p (expand-file-name helm-cmd-t-anti-cookie root))
                        (setq root (expand-file-name ".." root))))
       (when root
         (if (> (length root) (length best-root))
             (setq best-root root
-                  best-type (cdr cookie-data)))))
+                  best-type (nth 0 cookie-data)))))
     (when best-root
       (cons best-type best-root))))
+
+(defun helm-cmd-t-locate-dominating-file (file name)
+  (if (zerop (length name))
+      nil
+    (locate-dominating-file file name)))
 
 (defun helm-cmd-t-root-data (&optional file no-default)
   "get repo directory of file
@@ -223,10 +223,10 @@ specified, then it is used to construct the root-data. "
                                        nil
                                      helm-cmd-t-default-repo))
           res)
-      (setq res (helm-cmd-t-locate-dominating-files file helm-cmd-t-cookies helm-cmd-t-anti-cookie))
+      (setq res (helm-cmd-t-get-repo-root file))
       (when (and (not res)
                  helm-cmd-t-default-repo)
-        (setq res (helm-cmd-t-locate-dominating-files helm-cmd-t-default-repo helm-cmd-t-cookies helm-cmd-t-anti-cookie)))
+        (setq res (helm-cmd-t-get-repo-root helm-cmd-t-default-repo)))
       res)))
 
 (defun helm-cmd-t-format-age (age)
@@ -353,10 +353,9 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (interactive "P")
   (if (consp arg)
       (call-interactively 'helm-cmd-t-repos)
-    (let ((helm-ff-transformer-show-only-basename nil))
-      (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
-            :candidate-number-limit 20
-            :buffer "*helm-cmd-t:*"))))
+    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
+          :candidate-number-limit 20
+          :buffer "*helm-cmd-t:*")))
 
 (defun helm-cmd-t-get-caches ()
   "return list of (display-text buffer) for caches suitable for completion"
