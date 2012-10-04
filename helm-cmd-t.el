@@ -137,11 +137,11 @@ see `grep-find-ignored-files' for inspiration."
 
 
 (defvar helm-cmd-t-repo-types
-  `(("git"           . "cd %d && git --no-pager ls-files --full-name")
-    ("hg"            . "cd %d && hg manifest")
-    ("bzr"           . "cd %d && bzr ls --versioned")
-    (".dir-locals.el" . helm-cmd-t-get-find)
-    ("" . helm-cmd-t-get-find))
+  `(("git"         ".git"           "cd %d && git --no-pager ls-files --full-name")
+    ("hg"          ".hg"            "cd %d && hg manifest")
+    ("bzr"         ".bzr"           "cd %d && bzr ls --versioned")
+    ("dir-locals"  ".dir-locals.el" helm-cmd-t-get-find)
+    (""            ""               helm-cmd-t-get-find))
   "root types supported.
 this is an alist of (type . \"format-string\").
 
@@ -154,7 +154,7 @@ format string can also be symbol that takes:
 as its parameter. ")
 
 (defvar helm-cmd-t-cookies (mapcar (lambda (repo-type)
-                                     (cons (concat "." (car repo-type)) (car repo-type)))
+                                     (cons (nth 1 repo-type) (car repo-type)))
                                helm-cmd-t-repo-types)
   "A list of files that mark the root of a repository")
 
@@ -340,7 +340,7 @@ This is a convenience function for external libraries."
   (format helm-cmd-t-source-buffer-format (file-name-as-directory root)))
 
 (defun helm-cmd-t-insert-listing (repo-type repo-root)
-  (let ((cmd (cdr (assoc repo-type helm-cmd-t-repo-types))))
+  (let ((cmd (nth 2 (assoc repo-type helm-cmd-t-repo-types))))
     (if (functionp cmd)
         (funcall cmd repo-root)
       (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
