@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sun Oct  7 19:25:51 2012 (+0800)
+;; Last-Updated: Mon Oct  8 00:07:24 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 355
+;;     Update #: 369
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -143,7 +143,7 @@ see `grep-find-ignored-files' for inspiration."
     ("dir-locals"  ".dir-locals.el" helm-cmd-t-get-find)
     (""            ""               helm-cmd-t-get-find))
   "root types supported.
-this is an alist of (type . \"format-string\").
+this is an alist of (type cookie format-string).
 
 \"%d\" is replaced with the project root in the format-string.
 
@@ -279,8 +279,8 @@ specified, then it is used to construct the root-data. "
   (let* ((repo-root (cdr repo-root-data))
          (repo-type (car repo-root-data))
          (source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
-         (candidates-buffer (get-buffer-create source-buffer-name))
-         (data (with-current-buffer candidates-buffer
+         (candidate-buffer (get-buffer-create source-buffer-name))
+         (data (with-current-buffer candidate-buffer
                  helm-cmd-t-data))
          (my-source (cdr (assq 'helm-source data))))
     (when data
@@ -295,22 +295,24 @@ specified, then it is used to construct the root-data. "
                (when (< lines helm-cmd-t-cache-threshhold)
                  (setq my-source nil))))))
     (or my-source
-        (with-current-buffer candidates-buffer
+        (with-current-buffer candidate-buffer
           (erase-buffer)
           (setq default-directory (file-name-as-directory repo-root))
           (helm-cmd-t-insert-listing repo-type repo-root)
           (setq my-source `((name . ,(format "[%s]" (abbreviate-file-name repo-root)))
                             (header-name . (lambda (_)
-                                             (helm-cmd-t-format-title ,candidates-buffer)))
+                                             (helm-cmd-t-format-title ,candidate-buffer)))
                             (init . (lambda ()
-                                      (helm-candidate-buffer ,candidates-buffer)))
+                                      (helm-candidate-buffer ,candidate-buffer)))
                             (candidates-in-buffer)
                             (keymap . ,helm-generic-files-map)
                             (match helm-c-match-on-file-name
                                    helm-c-match-on-directory-name)
                             (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
                             (action-transformer helm-c-transform-file-load-el)
-                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))))
+                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))
+                            ;; not for helm, but for lookup if needed
+                            (candidate-buffer . ,candidate-buffer)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
                                       (cons 'repo-root repo-root)
                                       (cons 'repo-type repo-type)
@@ -380,25 +382,35 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
     (persistent-action . helm-c-switch-to-buffer)
     (persistent-help . "Show buffer")
     (action . (("cmd-t"      . helm-cmd-t-for-buffer)
-               ("git grep"   .   helm-cmd-t-grep)
+               ("grep"   .   tbd)
                ("INVALIDATE" . helm-kill-marked-buffers)))
+    (action-transformer . helm-cmd-t-repos-action-tr)
     (volatile)))
 
-(defun helm-cmd-t-repos (&optional root)
+(defun helm-cmd-t-repos-action-tr (actions candidate-buffer)
+  "redirect to proper grep"
+  (mapcar (lambda (action)
+            (if (string-match "\\`grep\\'" (car action))
+                (let ((repo-type (with-current-buffer candidate-buffer
+                                   (cdr (assq 'repo-type helm-cmd-t-data)))))
+                  (cond ((string= repo-type "git")
+                         (cons "git grep" 'helm-cmd-t-git-grep))
+                        ((string= repo-type "")
+                         (cons "recursive grep" 'helm-cmd-t-dir-grep))))
+              action))
+          actions))
+
+(defun helm-cmd-t-repos (&optional preselect-root)
   "Manage helm-cmd-t caches."
   (interactive)
-  (let* ((root (or root (helm-cmd-t-root)))
+  (let* ((preselect-root (or preselect-root (helm-cmd-t-root)))
          (source-buffer (get-buffer
-                         (helm-cmd-t-get-source-buffer-name root))))
-    (if (called-interactively-p 'any)
-        (helm :sources helm-c-source-cmd-t-caches
-              :preselect (when source-buffer
-                           (helm-cmd-t-format-title source-buffer)))
-      (when source-buffer
-        (kill-buffer source-buffer)))))
+                         (helm-cmd-t-get-source-buffer-name preselect-root))))
+    (helm :sources helm-c-source-cmd-t-caches
+          :preselect (when source-buffer
+                       (helm-cmd-t-format-title source-buffer)))))
 
-;;; TODO: figure out grep for other types of repos
-(defun helm-cmd-t-grep (cache-buffer &optional globs)
+(defun helm-cmd-t-git-grep (cache-buffer &optional globs)
   (interactive (list (current-buffer)
                      (read-string "OnlyExt(e.g. *.rb *.erb): ")))
   (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -e %p %f")
@@ -413,6 +425,11 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
          (helm-c-grep-default-directory-fn `(lambda ()
                                               ,helm-ff-default-directory)))
     (helm-do-grep-1 globs)))
+
+(defun helm-cmd-t-dir-grep (cache-buffer)
+  (helm-do-grep-1 (list (with-current-buffer cache-buffer
+                          (cdr (assq 'repo-root helm-cmd-t-data))))
+                  'recurse nil nil))
 
 (defun helm-cmd-t-for-buffer (buffer)
   "used as action from `helm-cmd-t-repos' "
