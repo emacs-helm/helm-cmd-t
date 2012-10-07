@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Oct  4 23:04:45 2012 (+0800)
+;; Last-Updated: Sun Oct  7 19:25:51 2012 (+0800)
 ;;           By: Le Wang
-;;     Update #: 351
+;;     Update #: 355
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -404,13 +404,14 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -e %p %f")
          helm-c-grep-default-recurse-command
          (globs (list "--" globs))
-         ;; Expand filename of each candidate with the git root dir.
-         ;; The filename will be in the help-echo prop.
-         (helm-c-grep-default-directory-fn 'helm-cmd-t-root)
          ;; `helm-c-grep-init' initialize `default-directory' to this value,
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
-         (helm-ff-default-directory (helm-cmd-t-root cache-buffer)))
+         (helm-ff-default-directory (helm-cmd-t-root cache-buffer))
+         ;; Expand filename of each candidate with the git root dir.
+         ;; The filename will be in the help-echo prop.
+         (helm-c-grep-default-directory-fn `(lambda ()
+                                              ,helm-ff-default-directory)))
     (helm-do-grep-1 globs)))
 
 (defun helm-cmd-t-for-buffer (buffer)
