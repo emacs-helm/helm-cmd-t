@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Mon Oct 29 01:05:56 2012 (+0800)
+;; Last-Updated: Wed Jan 16 20:40:34 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 370
+;;     Update #: 371
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -347,18 +347,6 @@ This is a convenience function for external libraries."
         (funcall cmd repo-root)
       (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
 
-(defun helm-cmd-t (&optional arg)
-  "Choose file from current repo.
-
-With prefix arg C-u, run `helm-cmd-t-repos'.
-"
-  (interactive "P")
-  (if (consp arg)
-      (call-interactively 'helm-cmd-t-repos)
-    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
-          :candidate-number-limit 20
-          :buffer "*helm-cmd-t:*")))
-
 (defun helm-cmd-t-get-caches ()
   "return list of (display-text buffer) for caches suitable for completion"
   (let ((regexp (replace-regexp-in-string
@@ -400,6 +388,20 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
               action))
           actions))
 
+;;;###autoload
+(defun helm-cmd-t (&optional arg)
+  "Choose file from current repo.
+
+With prefix arg C-u, run `helm-cmd-t-repos'.
+"
+  (interactive "P")
+  (if (consp arg)
+      (call-interactively 'helm-cmd-t-repos)
+    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
+          :candidate-number-limit 20
+          :buffer "*helm-cmd-t:*")))
+
+;;;###autoload
 (defun helm-cmd-t-repos (&optional preselect-root)
   "Manage helm-cmd-t caches."
   (interactive)
@@ -410,6 +412,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
           :preselect (when source-buffer
                        (helm-cmd-t-format-title source-buffer)))))
 
+;;;###autoload
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
   (interactive (list (current-buffer)
                      (read-string "OnlyExt(e.g. *.rb *.erb): ")))
