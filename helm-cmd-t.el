@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jan 16 20:40:34 2013 (+0800)
+;; Last-Updated: Wed Jan 16 20:59:03 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 371
+;;     Update #: 373
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -22,23 +22,26 @@
 
 ;; 1. install `helm' from github
 ;;
-;; 2. add to your config
+;; 2. clone the `helm-cmd-t' repository to "~/.emacs.d/helm-cmd-t"
 ;;
+;; 3. add to your config
+;;
+;;      (push "~/.emacs.d/helm-cmd-t" load-path)
 ;;      (require 'helm-config)
 ;;      (require 'helm-cmd-t)
 ;;      (global-set-key (kbd "M-t") 'helm-cmd-t)
 ;;
-;; 3. additional optional helm settings to make helm more responsive.
+;; 4. additional optional helm settings to make helm more responsive.
 ;;
 ;;      (setq helm-ff-lynx-style-map nil
 ;;            helm-input-idle-delay 0.1
 ;;            helm-idle-delay 0.1
 ;;      )
 ;;
-;; 4. have a look at helm-C-x-b.el for more examples of how to use the
+;; 5. have a look at helm-C-x-b.el for more examples of how to use the
 ;;    `helm-cmd-t' source to craft your own master file chooser.
 ;;
-;; 5. read the self-documenting code for additional configuration options.
+;; 6. read the self-documenting code for additional configuration options.
 ;;
 
 
