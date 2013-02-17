@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jan 16 20:59:03 2013 (+0800)
+;; Last-Updated: Sat Feb 16 21:58:55 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 373
+;;     Update #: 374
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -426,6 +426,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
          (helm-ff-default-directory (helm-cmd-t-root cache-buffer))
+         (helm-default-directory helm-ff-default-directory)
          ;; Expand filename of each candidate with the git root dir.
          ;; The filename will be in the help-echo prop.
          (helm-c-grep-default-directory-fn `(lambda ()
