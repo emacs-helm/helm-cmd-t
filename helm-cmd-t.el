@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Feb 16 21:58:55 2013 (+0800)
+;; Last-Updated: Thu Feb 21 19:40:05 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 374
+;;     Update #: 375
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -87,7 +87,6 @@
 (eval-when-compile (require 'cl))
 
 
-(provide 'helm-cmd-t)
 (require 'helm-config)
 (require 'helm-locate)
 (require 'helm-files)
@@ -469,6 +468,9 @@ based on system type.
   (if (eq system-type 'windows-nt)
       (helm-cmd-t-elisp-find-insert root)
     (helm-cmd-t-shell-find-insert root)))
+
+
+(provide 'helm-cmd-t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helm-cmd-t.el ends here
