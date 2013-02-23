@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Thu Feb 21 19:40:05 2013 (+0800)
+;; Last-Updated: Sat Feb 23 13:39:02 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 375
+;;     Update #: 376
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -221,8 +221,8 @@ specified, then it is used to construct the root-data. "
             (cdr (assq 'repo-root helm-cmd-t-data)))
     (setq file (or file
                    default-directory))
-    (let ((helm-cmd-t-default-repo (if no-default
-                                       nil
+    (let ((helm-cmd-t-default-repo (when (and (null no-default)
+                                              helm-cmd-t-default-repo)
                                      (file-name-as-directory helm-cmd-t-default-repo)))
           res)
       (setq res (helm-cmd-t-get-repo-root file))
