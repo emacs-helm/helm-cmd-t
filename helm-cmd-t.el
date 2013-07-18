@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Sat Feb 23 13:39:02 2013 (+0800)
+;; Last-Updated: Wed Jun 12 11:52:24 2013 (+0800)
 ;;           By: Le Wang
-;;     Update #: 376
+;;     Update #: 377
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -418,7 +418,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
   (interactive (list (current-buffer)
                      (read-string "OnlyExt(e.g. *.rb *.erb): ")))
-  (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -e %p %f")
+  (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -E %p %f")
          helm-c-grep-default-recurse-command
          (globs (list "--" globs))
          ;; `helm-c-grep-init' initialize `default-directory' to this value,
