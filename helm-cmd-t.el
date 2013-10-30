@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Oct 30 15:19:16 2013 (-0400)
+;; Last-Updated: Wed Oct 30 15:41:09 2013 (-0400)
 ;;           By: Le Wang
-;;     Update #: 389
+;;     Update #: 392
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -110,7 +110,11 @@ It should return nil to stop caching.
 
 (defcustom helm-cmd-t-default-repo nil
   "A path that points to a default repo root.
+
+Can be a string or function that returns a string.
+
 If the current file does not belong to a repo then this path is used.
+
 "
   :group 'helm-command
   :type 'string)
@@ -205,14 +209,14 @@ return (<repo type> . <root.>)"
     (locate-dominating-file file name)))
 
 (defun helm-cmd-t-root-data (&optional file no-default)
-  "get repo directory of file
+  "Get repo directory of file.
 return (<repo type> . <root>)
 
 if NO-DEFAULT is specified, don't look for the default.
 
 return NIL if no root found.
 
-If `helm-cmd-d-t-data' is defined and no parameters are
+If `helm-cmd-t-data' is defined and no parameters are
 specified, then it is used to construct the root-data. "
   (if (and (null file)
            (null no-default)
@@ -221,15 +225,14 @@ specified, then it is used to construct the root-data. "
             (cdr (assq 'repo-root helm-cmd-t-data)))
     (setq file (or file
                    default-directory))
-    (let ((helm-cmd-t-default-repo (when (and (null no-default)
-                                              helm-cmd-t-default-repo)
-                                     (file-name-as-directory helm-cmd-t-default-repo)))
-          res)
-      (setq res (helm-cmd-t-get-repo-root file))
-      (when (and (not res)
-                 helm-cmd-t-default-repo)
-        (setq res (helm-cmd-t-get-repo-root helm-cmd-t-default-repo)))
-      res)))
+    (or (helm-cmd-t-get-repo-root file)
+        (let ((default (when (and (null no-default)
+                                  helm-cmd-t-default-repo)
+                         (file-name-as-directory (if (functionp helm-cmd-t-default-repo)
+                                                     (funcall helm-cmd-t-default-repo)
+                                                   helm-cmd-t-default-repo)))))
+          (and default
+               (helm-cmd-t-get-repo-root default))))))
 
 (defun helm-cmd-t-format-age (age)
   "convert age in float to reasonable time explanation"
