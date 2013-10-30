@@ -11,9 +11,9 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Jun 12 11:52:24 2013 (+0800)
+;; Last-Updated: Wed Oct 30 14:01:55 2013 (-0400)
 ;;           By: Le Wang
-;;     Update #: 377
+;;     Update #: 381
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
@@ -272,7 +272,7 @@ specified, then it is used to construct the root-data. "
         for abs = (expand-file-name i root)
         for disp = (if (and helm-ff-transformer-show-only-basename
                             (not (helm-dir-is-dot i)))
-                       (helm-c-basename i)
+                       (helm-basename i)
                      i)
         collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
@@ -308,11 +308,10 @@ specified, then it is used to construct the root-data. "
                                       (helm-candidate-buffer ,candidate-buffer)))
                             (candidates-in-buffer)
                             (keymap . ,helm-generic-files-map)
-                            (match helm-c-match-on-file-name
-                                   helm-c-match-on-directory-name)
+                            (match helm-files-match-only-basename)
                             (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
-                            (action-transformer helm-c-transform-file-load-el)
-                            (action . ,(cdr (helm-get-actions-from-type helm-c-source-locate)))
+                            (action-transformer helm-transform-file-load-el)
+                            (action . ,(cdr (helm-get-actions-from-type helm-source-locate)))
                             ;; not for helm, but for lookup if needed
                             (candidate-buffer . ,candidate-buffer)))
           (setq helm-cmd-t-data (list (cons 'helm-source my-source)
@@ -366,10 +365,10 @@ This is a convenience function for external libraries."
           (buffer-list))
     res))
 
-(defvar helm-c-source-cmd-t-caches
+(defvar helm-source-cmd-t-caches
   `((name . "Cmd-t repo caches")
     (candidates . helm-cmd-t-get-caches)
-    (persistent-action . helm-c-switch-to-buffer)
+    (persistent-action . helm-switch-to-buffer)
     (persistent-help . "Show buffer")
     (action . (("cmd-t"      . helm-cmd-t-for-buffer)
                ("grep"   .   tbd)
@@ -410,7 +409,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (let* ((preselect-root (or preselect-root (helm-cmd-t-root)))
          (source-buffer (get-buffer
                          (helm-cmd-t-get-source-buffer-name preselect-root))))
-    (helm :sources helm-c-source-cmd-t-caches
+    (helm :sources helm-source-cmd-t-caches
           :preselect (when source-buffer
                        (helm-cmd-t-format-title source-buffer)))))
 
@@ -418,17 +417,17 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
   (interactive (list (current-buffer)
                      (read-string "OnlyExt(e.g. *.rb *.erb): ")))
-  (let* ((helm-c-grep-default-command "git grep -n%cH --full-name -E %p %f")
-         helm-c-grep-default-recurse-command
+  (let* ((helm-grep-default-command "git grep -n%cH --full-name -E %p %f")
+         helm-grep-default-recurse-command
          (globs (list "--" globs))
-         ;; `helm-c-grep-init' initialize `default-directory' to this value,
+         ;; `helm-grep-init' initialize `default-directory' to this value,
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
          (helm-ff-default-directory (helm-cmd-t-root cache-buffer))
          (helm-default-directory helm-ff-default-directory)
          ;; Expand filename of each candidate with the git root dir.
          ;; The filename will be in the help-echo prop.
-         (helm-c-grep-default-directory-fn `(lambda ()
+         (helm-grep-default-directory-fn `(lambda ()
                                               ,helm-ff-default-directory)))
     (helm-do-grep-1 globs)))
 

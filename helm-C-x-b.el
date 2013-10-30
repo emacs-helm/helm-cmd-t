@@ -13,7 +13,7 @@
 ;; Version: 0.1
 ;; Last-Updated:
 ;;           By:
-;;     Update #: 9
+;;     Update #: 10
 ;; URL:
 ;; Keywords:
 ;; Compatibility:
@@ -59,16 +59,16 @@
 
 (provide 'helm-C-x-b)
 
-(defvar helm-C-x-b-sources '(helm-c-source-buffers-list
-                             helm-c-source-session
-                             helm-c-source-files-in-current-dir
-                             helm-c-source-cmd-t
-                             helm-c-source-buffer-not-found)
+(defvar helm-C-x-b-sources '(helm-source-buffers-list
+                             helm-source-session
+                             helm-source-files-in-current-dir
+                             helm-source-cmd-t
+                             helm-source-buffer-not-found)
   "list of sources used for selecting files.
 
 This could be used as a drop-in replacement for `switch-to-buffer'.
 
-`helm-c-source-cmd-t' is a place-holder.
+`helm-source-cmd-t' is a place-holder.
 ")
 
 
@@ -76,11 +76,11 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 (defun helm-C-x-b-sources ()
   "construct list of sources based on `helm-C-x-b-sources'.
 
-`helm-c-source-cmd-t' is replaced with an appropriate item .
+`helm-source-cmd-t' is replaced with an appropriate item .
 "
   (let* ((my-sources (append helm-C-x-b-sources '()))
          (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
-    (setcar (memq 'helm-c-source-cmd-t my-sources) my-source)
+    (setcar (memq 'helm-source-cmd-t my-sources) my-source)
     my-sources))
 
 
