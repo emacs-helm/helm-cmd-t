@@ -233,7 +233,7 @@ specified, then it is used to construct the root-data. "
 (defun helm-cmd-t-format-age (age)
   "convert age in float to reasonable time explanation"
   (cond ((< age 10)
-         "")
+         "not cached")
         ((< age 3600)
          (format " %i min ago" (ceiling (/ age 60))))
         (t
@@ -246,13 +246,14 @@ specified, then it is used to construct the root-data. "
         (t
          (format "%.1fk files" (/ lines 1000.0)))))
 
+(defvar helm-cmd-t-ftime nil)
+
 (defun helm-cmd-t-format-title (buffer)
   "format header line according to `helm-cmd-t-header-format'"
   (let* ((data (buffer-local-value 'helm-cmd-t-data buffer))
          (repo-root (cdr (assq 'repo-root data)))
          (repo-type (cdr (assq 'repo-type data)))
-         (age (- (float-time) (or (cdr (assq 'time-stamp data))
-                                  (float-time))))
+         (age (- helm-cmd-t-ftime (cdr (assq 'time-stamp data))))
          (age-str (helm-cmd-t-format-age age))
          (lines (helm-cmd-t-format-lines
                  (cdr (assq 'lines data)))))
@@ -368,6 +369,7 @@ This is a convenience function for external libraries."
 
 (defvar helm-source-cmd-t-caches
   `((name . "Cmd-t repo caches")
+    (init . (lambda () (setq helm-cmd-t-ftime (float-time))))
     (candidates . helm-cmd-t-get-caches)
     (candidate-transformer . helm-cmd-t-repos-transformer)
     (persistent-action . helm-switch-to-buffer)
