@@ -11,9 +11,6 @@
 
 ;; Created: Sat Nov  5 16:42:32 2011 (+0800)
 ;; Version: 0.1
-;; Last-Updated: Wed Oct 30 15:41:09 2013 (-0400)
-;;           By: Le Wang
-;;     Update #: 392
 ;; URL: https://github.com/lewang/helm-cmd-t
 ;; Keywords: helm project-management completion convenience cmd-t textmate
 ;; Compatibility:
