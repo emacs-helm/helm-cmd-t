@@ -248,25 +248,25 @@ specified, then it is used to construct the root-data. "
 
 (defun helm-cmd-t-format-title (buffer)
   "format header line according to `helm-cmd-t-header-format'"
-  (with-current-buffer buffer
-    (let* ((repo-root (cdr (assq 'repo-root helm-cmd-t-data)))
-           (repo-type (cdr (assq 'repo-type helm-cmd-t-data)))
-           (age (- (float-time) (or (cdr (assq 'time-stamp helm-cmd-t-data))
-                                    (float-time))))
-           (age-str (helm-cmd-t-format-age age))
-           (lines (helm-cmd-t-format-lines
-                   (cdr (assq 'lines helm-cmd-t-data)))))
-      (setq repo-type (if (zerop (length repo-type))
-                          "dir"
-                        (concat repo-type " repo")))
-      (format-spec helm-cmd-t-header-format (format-spec-make ?r repo-root
-                                                              ?t repo-type
-                                                              ?a age-str
-                                                              ?l lines)))))
+  (let* ((data (buffer-local-value 'helm-cmd-t-data buffer))
+         (repo-root (cdr (assq 'repo-root data)))
+         (repo-type (cdr (assq 'repo-type data)))
+         (age (- (float-time) (or (cdr (assq 'time-stamp data))
+                                  (float-time))))
+         (age-str (helm-cmd-t-format-age age))
+         (lines (helm-cmd-t-format-lines
+                 (cdr (assq 'lines data)))))
+    (setq repo-type (if (zerop (length repo-type))
+                        "dir"
+                      (concat repo-type " repo")))
+    (format-spec helm-cmd-t-header-format (format-spec-make ?r repo-root
+                                                            ?t repo-type
+                                                            ?a age-str
+                                                            ?l lines))))
 (defun helm-cmd-t-transform-candidates (candidates source)
   "convert each candidate to cons of (disp . real)"
-  (loop with root = (with-current-buffer (helm-candidate-buffer)
-                      (cdr (assq 'repo-root helm-cmd-t-data)))
+  (loop with root =
+        (cdr (assq 'repo-root (buffer-local-value 'helm-cmd-t-data (helm-candidate-buffer))))
         for i in candidates
         for abs = (expand-file-name i root)
         for disp = (if (and helm-ff-transformer-show-only-basename
@@ -281,8 +281,7 @@ specified, then it is used to construct the root-data. "
          (repo-type (car repo-root-data))
          (source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
          (candidate-buffer (get-buffer-create source-buffer-name))
-         (data (with-current-buffer candidate-buffer
-                 helm-cmd-t-data))
+         (data (buffer-local-value 'helm-cmd-t-data candidate-buffer))
          (my-source (cdr (assq 'helm-source data))))
     (when data
       (let ((lines (cdr (assq 'lines data))))
@@ -347,9 +346,8 @@ This is a convenience function for external libraries."
  (pretty-name . buffer)
 "
   (mapcar (lambda (buffer-name)
-          (with-current-buffer buffer-name
-            (cons (helm-cmd-t-format-title (current-buffer))
-                  (current-buffer))))
+            (let ((buffer (get-buffer buffer-name)))
+              (cons (helm-cmd-t-format-title buffer) buffer)))
           candidates))
 
 
@@ -383,8 +381,9 @@ This is a convenience function for external libraries."
   "redirect to proper grep"
   (mapcar (lambda (action)
             (if (string-match "\\`grep\\'" (car action))
-                (let ((repo-type (with-current-buffer candidate-buffer
-                                   (cdr (assq 'repo-type helm-cmd-t-data)))))
+                (let ((repo-type
+                       (cdr (assq 'repo-type
+                                  (buffer-local-value 'helm-cmd-t-data candidate-buffer)))))
                   (cond ((string= repo-type "git")
                          (cons "git grep" 'helm-cmd-t-git-grep))
                         ((string= repo-type "")
@@ -437,8 +436,8 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
     (helm-do-grep-1 globs)))
 
 (defun helm-cmd-t-dir-grep (cache-buffer)
-  (helm-do-grep-1 (list (with-current-buffer cache-buffer
-                          (cdr (assq 'repo-root helm-cmd-t-data))))
+  (helm-do-grep-1 (list (cdr (assq 'repo-root
+                                   (buffer-local-value 'helm-cmd-t-data cache-buffer))))
                   'recurse nil nil))
 
 (defun helm-cmd-t-for-buffer (buffer)
