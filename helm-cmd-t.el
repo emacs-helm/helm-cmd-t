@@ -133,7 +133,6 @@ see `grep-find-ignored-files' for inspiration."
 
 (defvar helm-cmd-t-data nil
   "data only relevant in helm source buffer.")
-(make-variable-buffer-local 'helm-cmd-t-data)
 
 (defvar helm-cmd-t-find-command "find"
   "command to execute to get list of files it should be some variant of the Unix `find' command.")
@@ -314,11 +313,12 @@ specified, then it is used to construct the root-data. "
                             (action . ,(cdr (helm-get-actions-from-type helm-source-locate)))
                             ;; not for helm, but for lookup if needed
                             (candidate-buffer . ,candidate-buffer)))
-          (setq helm-cmd-t-data (list (cons 'helm-source my-source)
-                                      (cons 'repo-root repo-root)
-                                      (cons 'repo-type repo-type)
-                                      (cons 'time-stamp (float-time))
-                                      (cons 'lines (count-lines (point-min) (point-max)))))
+          (set (make-local-variable 'helm-cmd-t-data)
+               (list (cons 'helm-source my-source)
+                     (cons 'repo-root repo-root)
+                     (cons 'repo-type repo-type)
+                     (cons 'time-stamp (float-time))
+                     (cons 'lines (count-lines (point-min) (point-max)))))
           my-source))))
 
 (defun helm-cmd-t-get-create-source-dir (dir)
@@ -342,6 +342,17 @@ This is a convenience function for external libraries."
 (defun helm-cmd-t-get-source-buffer-name (root)
   (format helm-cmd-t-source-buffer-format (file-name-as-directory root)))
 
+(defun helm-cmd-t-repos-transformer (candidates)
+  "Transform a list of buffers to list of
+ (pretty-name . buffer)
+"
+  (mapcar (lambda (buffer-name)
+          (with-current-buffer buffer-name
+            (cons (helm-cmd-t-format-title (current-buffer))
+                  (current-buffer))))
+          candidates))
+
+
 (defun helm-cmd-t-insert-listing (repo-type repo-root)
   (let ((cmd (nth 2 (assoc repo-type helm-cmd-t-repo-types))))
     (if (functionp cmd)
@@ -349,32 +360,24 @@ This is a convenience function for external libraries."
       (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
 
 (defun helm-cmd-t-get-caches ()
-  "return list of (display-text buffer) for caches suitable for completion"
-  (let ((regexp (replace-regexp-in-string
-                 "%s" "\\\\(.*\\\\)"
-                 (regexp-quote helm-cmd-t-source-buffer-format)))
-        res)
-    (mapc (lambda (buf)
-            (with-current-buffer buf
-              (let ((b-name (buffer-name)))
-                (when (and helm-cmd-t-data
-                           (string-match regexp b-name))
-                  (push (cons (helm-cmd-t-format-title buf)
-                              b-name)
-                        res)))))
+  "return list of buffer names for caches suitable for transformation"
+  (let (res)
+    (mapc (lambda (buffer)
+            (when (buffer-local-value 'helm-cmd-t-data buffer)
+              (push (buffer-name buffer) res)))
           (buffer-list))
     res))
 
 (defvar helm-source-cmd-t-caches
   `((name . "Cmd-t repo caches")
     (candidates . helm-cmd-t-get-caches)
+    (candidate-transformer . helm-cmd-t-repos-transformer)
     (persistent-action . helm-switch-to-buffer)
     (persistent-help . "Show buffer")
     (action . (("cmd-t"      . helm-cmd-t-for-buffer)
                ("grep"   .   tbd)
                ("INVALIDATE" . helm-kill-marked-buffers)))
-    (action-transformer . helm-cmd-t-repos-action-tr)
-    (volatile)))
+    (action-transformer . helm-cmd-t-repos-action-tr)))
 
 (defun helm-cmd-t-repos-action-tr (actions candidate-buffer)
   "redirect to proper grep"
@@ -406,12 +409,11 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
 (defun helm-cmd-t-repos (&optional preselect-root)
   "Manage helm-cmd-t caches."
   (interactive)
-  (let* ((preselect-root (or preselect-root (helm-cmd-t-root)))
-         (source-buffer (get-buffer
-                         (helm-cmd-t-get-source-buffer-name preselect-root))))
-    (helm :sources helm-source-cmd-t-caches
-          :preselect (when source-buffer
-                       (helm-cmd-t-format-title source-buffer)))))
+  (setq preselect-root (or preselect-root (helm-cmd-t-root)))
+  (helm :sources helm-source-cmd-t-caches
+        :preselect (helm-aif (get-buffer
+                              (helm-cmd-t-get-source-buffer-name preselect-root))
+                       (regexp-quote (buffer-name it)))))
 
 ;;;###autoload
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
