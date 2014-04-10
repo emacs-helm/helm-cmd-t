@@ -412,7 +412,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (helm :sources helm-source-cmd-t-caches
         :preselect (helm-aif (get-buffer
                               (helm-cmd-t-get-source-buffer-name preselect-root))
-                       (regexp-quote (buffer-name it)))))
+                       (regexp-quote (helm-cmd-t-format-title it)))))
 
 ;;;###autoload
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
