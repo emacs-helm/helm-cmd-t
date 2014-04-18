@@ -162,7 +162,7 @@ as its parameter. ")
   " *helm-cmd-t source - [%s]*")
 
 (defvar helm-cmd-t-header-format
-  "[%r] (%l in %t%a)"
+  "[%r] (%t %l %a)"
   "format for project header
   %r - project root
   %t - type of repo
@@ -232,16 +232,18 @@ specified, then it is used to construct the root-data. "
 
 (defun helm-cmd-t-format-age (age)
   "convert age in float to reasonable time explanation"
-  (cond ((< age 10)
+  (cond ((= age 0)
          "not cached")
         ((< age 3600)
-         (format " %i min ago" (ceiling (/ age 60))))
+         (format "cached %i min ago" (ceiling (/ age 60))))
         (t
-         (format " %.1f hours ago" (/ age 3600)))))
+         (format "cached %.1f hours ago" (/ age 3600)))))
 
 (defun helm-cmd-t-format-lines (lines)
   "convert lines to reasonable presentation"
-  (cond ((< lines 1000)
+  (cond ((= lines 0)
+         "")
+        ((< lines 1000)
          (format "%s files" lines))
         (t
          (format "%.1fk files" (/ lines 1000.0)))))
@@ -253,7 +255,10 @@ specified, then it is used to construct the root-data. "
   (let* ((data (buffer-local-value 'helm-cmd-t-data buffer))
          (repo-root (cdr (assq 'repo-root data)))
          (repo-type (cdr (assq 'repo-type data)))
-         (age (- helm-cmd-t-ftime (cdr (assq 'time-stamp data))))
+         (cached-p (cdr (assq 'cached-p data)))
+         (age (if cached-p
+                  (- helm-cmd-t-ftime (cdr (assq 'time-stamp data)))
+                0))
          (age-str (helm-cmd-t-format-age age))
          (lines (helm-cmd-t-format-lines
                  (cdr (assq 'lines data)))))
@@ -266,8 +271,9 @@ specified, then it is used to construct the root-data. "
                                                             ?l lines))))
 (defun helm-cmd-t-transform-candidates (candidates source)
   "convert each candidate to cons of (disp . real)"
-  (loop with root =
-        (cdr (assq 'repo-root (buffer-local-value 'helm-cmd-t-data (helm-candidate-buffer))))
+  (loop with root = (cdr (assq 'repo-root
+                               (buffer-local-value 'helm-cmd-t-data
+                                                   (helm-candidate-buffer))))
         for i in candidates
         for abs = (expand-file-name i root)
         for disp = (if (and helm-ff-transformer-show-only-basename
@@ -276,30 +282,31 @@ specified, then it is used to construct the root-data. "
                      i)
         collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
-(defun helm-cmd-t-get-create-source (repo-root-data)
-  "source for repo-root"
+(defun helm-cmd-t-cache-p (line-count repo-type repo-root)
+  (cond ((functionp helm-cmd-t-cache-threshhold)
+         (not (funcall helm-cmd-t-cache-threshhold repo-type repo-root line-count)))
+        ((numberp helm-cmd-t-cache-threshhold)
+         (>= line-count helm-cmd-t-cache-threshhold))
+        (not helm-cmd-t-cache-threshhold)))
+
+(defun helm-cmd-t-get-create-source (repo-root-data &optional skeleton)
+  "Get cached source or create new one.
+SKELETON is used to ensure a repo is listed without doing any
+extra work to laod it. This can be used to ensure the 'current'
+repo is always listed when selecting repos."
   (let* ((repo-root (cdr repo-root-data))
          (repo-type (car repo-root-data))
          (source-buffer-name (helm-cmd-t-get-source-buffer-name repo-root))
          (candidate-buffer (get-buffer-create source-buffer-name))
          (data (buffer-local-value 'helm-cmd-t-data candidate-buffer))
-         (my-source (cdr (assq 'helm-source data))))
-    (when data
-      (let ((lines (cdr (assq 'lines data))))
-        (cond ((null helm-cmd-t-cache-threshhold)
-               (setq my-source nil))
-              ((functionp helm-cmd-t-cache-threshhold)
-               (let ((res (funcall helm-cmd-t-cache-threshhold repo-type repo-root lines)))
-                 (when (null res)
-                   (setq my-source nil))))
-              ((numberp helm-cmd-t-cache-threshhold)
-               (when (< lines helm-cmd-t-cache-threshhold)
-                 (setq my-source nil))))))
+         (my-source (when (cdr (assq 'cache-p data))
+                        (cdr (assq 'helm-source data)))))
     (or my-source
         (with-current-buffer candidate-buffer
           (erase-buffer)
           (setq default-directory (file-name-as-directory repo-root))
-          (helm-cmd-t-insert-listing repo-type repo-root)
+          (unless skeleton
+           (helm-cmd-t-insert-listing repo-type repo-root))
           (setq my-source `((name . ,(format "[%s]" (abbreviate-file-name repo-root)))
                             (header-name . (lambda (_)
                                              (helm-cmd-t-format-title ,candidate-buffer)))
@@ -313,12 +320,15 @@ specified, then it is used to construct the root-data. "
                             (action . ,(cdr (helm-get-actions-from-type helm-source-locate)))
                             ;; not for helm, but for lookup if needed
                             (candidate-buffer . ,candidate-buffer)))
-          (set (make-local-variable 'helm-cmd-t-data)
-               (list (cons 'helm-source my-source)
-                     (cons 'repo-root repo-root)
-                     (cons 'repo-type repo-type)
-                     (cons 'time-stamp (float-time))
-                     (cons 'lines (count-lines (point-min) (point-max)))))
+          (let ((lines (count-lines (point-min) (point-max))))
+            (set (make-local-variable 'helm-cmd-t-data)
+                 (list (cons 'helm-source my-source)
+                       (cons 'repo-root repo-root)
+                       (cons 'repo-type repo-type)
+                       (cons 'time-stamp (float-time))
+                       (cons 'lines lines)
+                       (cons 'cache-p (if skeleton nil
+                                        (helm-cmd-t-cache-p lines repo-type repo-root))))))
           my-source))))
 
 (defun helm-cmd-t-get-create-source-dir (dir)
@@ -380,18 +390,24 @@ This is a convenience function for external libraries."
     (action-transformer . helm-cmd-t-repos-action-tr)))
 
 (defun helm-cmd-t-repos-action-tr (actions candidate-buffer)
-  "redirect to proper grep"
-  (mapcar (lambda (action)
-            (if (string-match "\\`grep\\'" (car action))
-                (let ((repo-type
-                       (cdr (assq 'repo-type
-                                  (buffer-local-value 'helm-cmd-t-data candidate-buffer)))))
-                  (cond ((string= repo-type "git")
-                         (cons "git grep" 'helm-cmd-t-git-grep))
-                        ((string= repo-type "")
-                         (cons "recursive grep" 'helm-cmd-t-dir-grep))))
-              action))
-          actions))
+  "Redirect to proper grep,
+Remove invalidate if not cached."
+  (let (res)
+    (let* ((data (buffer-local-value 'helm-cmd-t-data candidate-buffer))
+           (repo-type (cdr (assq 'repo-type data)))
+           (cached-p (cdr (assq 'cached-p data))))
+      (mapc (lambda (action)
+              (cond ((string-match "\\`grep\\'" (car action))
+                     (push (cond ((string= repo-type "git")
+                                  (cons "git grep" 'helm-cmd-t-git-grep))
+                                 ((string= repo-type "")
+                                  (cons "recursive grep" 'helm-cmd-t-dir-grep)))
+                           res))
+                    ((string-match "INVALIDATE" (car action)))
+                    (t
+                     (push action res))))
+            actions)
+      (reverse res))))
 
 ;;;###autoload
 (defun helm-cmd-t (&optional arg)
@@ -414,6 +430,7 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   "Manage helm-cmd-t caches."
   (interactive)
   (setq preselect-root (or preselect-root (helm-cmd-t-root)))
+  (helm-cmd-t-get-create-source (helm-cmd-t-root-data preselect-root) 'skeleton)
   (helm :sources helm-source-cmd-t-caches
         :preselect (helm-aif (get-buffer
                               (helm-cmd-t-get-source-buffer-name preselect-root))
