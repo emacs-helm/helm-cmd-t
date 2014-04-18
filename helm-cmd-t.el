@@ -402,9 +402,12 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (interactive "P")
   (if (consp arg)
       (call-interactively 'helm-cmd-t-repos)
-    (helm :sources (helm-cmd-t-get-create-source (helm-cmd-t-root-data))
-          :candidate-number-limit 20
-          :buffer "*helm-cmd-t:*")))
+    (let ((root-data (helm-cmd-t-root-data)))
+      (if root-data
+          (helm :sources (helm-cmd-t-get-create-source root-data)
+                :candidate-number-limit 20
+                :buffer "*helm-cmd-t:*")
+        (error "No repository for %s" default-directory)))))
 
 ;;;###autoload
 (defun helm-cmd-t-repos (&optional preselect-root)

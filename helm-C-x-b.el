@@ -11,12 +11,6 @@
 
 ;; Created: Tue Jul 24 23:28:07 2012 (+0800)
 ;; Version: 0.1
-;; Last-Updated:
-;;           By:
-;;     Update #: 10
-;; URL:
-;; Keywords:
-;; Compatibility:
 
 ;;; Installation:
 
@@ -71,17 +65,36 @@ This could be used as a drop-in replacement for `switch-to-buffer'.
 `helm-source-cmd-t' is a place-holder.
 ")
 
+(defun helm-C-x-replace-in-list (list item replacement)
+  "Reaplace ITEM with REPLACEMENT in LIST.
 
+If REPLACEMENT is nil, then remove ITEM from the list."
+  (let (before found)
+    (loop for i on list
+          do (if (eq (car i) item)
+                 (progn
+                   (setq found i)
+                   (return))
+               (setq before i)))
+    (when found
+        (if replacement
+            (setcar found replacement)
+          (if before
+              (setcdr before (cdr found))
+            ;; found as first item
+            (setq list (cdr list)))))
+    list))
 
 (defun helm-C-x-b-sources ()
   "construct list of sources based on `helm-C-x-b-sources'.
 
 `helm-source-cmd-t' is replaced with an appropriate item .
 "
-  (let* ((my-sources (append helm-C-x-b-sources '()))
-         (my-source (helm-cmd-t-get-create-source (helm-cmd-t-root-data))))
-    (setcar (memq 'helm-source-cmd-t my-sources) my-source)
-    my-sources))
+  (let ((root-data (helm-cmd-t-root-data)))
+    (helm-C-x-replace-in-list (append helm-C-x-b-sources '()) ; copy
+                              'helm-source-cmd-t (if root-data
+                                                     (helm-cmd-t-get-create-source root-data)
+                                                   nil))))
 
 
 (defun helm-C-x-b (arg)
