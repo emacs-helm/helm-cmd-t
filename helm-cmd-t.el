@@ -436,10 +436,22 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
                               (helm-cmd-t-get-source-buffer-name preselect-root))
                        (regexp-quote (helm-cmd-t-format-title it)))))
 
+(defun helm-cmd-t-read-glob ()
+  (format "'%s'" (read-string "OnlyExt(e.g. *.rb *.erb): ")))
+
 ;;;###autoload
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
+  "Do git grep.  Accessible as command or from the repos source.
+
+Use C-U to narrow by extensions."
   (interactive (list (current-buffer)
-                     (read-string "OnlyExt(e.g. *.rb *.erb): ")))
+                     (when current-prefix-arg
+                       (helm-cmd-t-read-glob))))
+
+  ;; helm does not invoke this interactively
+  (when helm-current-prefix-arg
+    (setq globs (helm-cmd-t-read-glob)))
+
   ;; We set it here in case of nil, which breaks resume.
   (setq helm-ff-default-directory (or helm-ff-default-directory
                                       (helm-cmd-t-root cache-buffer)))
