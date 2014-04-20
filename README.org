@@ -1,8 +1,13 @@
 * Purpose
 
-This package provides a helm source for repository (git, hg, etc) based file
-selection.  The emphasis is on fast file-name completion.  The concept of a
-"respository" is configurable through `helm-cmd-t-repo-types'.
+Helm-cmd-t provides functions to a expose a directory (called a repository) as a helm source.  If the directory happens to be under SCM, then the appropriate tools (e.g. "git grep") are used to interact with it.
+
+The helm source can be used to
+
+1) select a file
+2) grep the repository
+3) perform helm-multi-occur on open buffers from the repository.
+
 
 Each repository is cached for fast access (see `helm-cmd-t-cache-threshhold'),
 and in the future, options will be available to interact with the repository
@@ -91,3 +96,5 @@ Unfortunately it's not available in Helm yet.
 Helm's space separated regexps require a few more keystrokes, but the results
 are consistent and predictable.  See the header of helm-match-plugin.el for
 details.
+
+#  LocalWords:  appropraite
