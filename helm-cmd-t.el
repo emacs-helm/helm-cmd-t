@@ -287,7 +287,7 @@ specified, then it is used to construct the root-data. "
          (not (funcall helm-cmd-t-cache-threshhold repo-type repo-root line-count)))
         ((numberp helm-cmd-t-cache-threshhold)
          (>= line-count helm-cmd-t-cache-threshhold))
-        (not helm-cmd-t-cache-threshhold)))
+        ((not helm-cmd-t-cache-threshhold))))
 
 (defun helm-cmd-t-get-create-source (repo-root-data &optional skeleton)
   "Get cached source or create new one.
