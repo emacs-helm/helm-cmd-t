@@ -64,16 +64,13 @@ for Helm completion and grep.
 *** It's easy to convert any file system directory into a source
 
 #+begin_src emacs-lisp
-(setq downloads-source (helm-cmd-t-get-create-source-dir "~/Downloads"))
-#+end_src
-
-*** Define a command based on the source:
-
-#+begin_src emacs-lisp
-(defun choose-from-downloads ()
-  "Choose file from test folder."
-  (interactive)
-  (helm :sources downloads-source))
+  (setq downloads-source (helm-cmd-t-get-create-source-dir "~/Downloads"))
+  (setq docs-source (helm-cmd-t-get-create-source-dir "~/Documents"))
+  
+  (defun helm-cmd-t-ad-hoc-example ()
+    "Choose file from test folder."
+    (interactive)
+    (helm :sources (list downloads-source docs-source)))
 #+end_src
 
 *** Combine sources to make custom file selectors
