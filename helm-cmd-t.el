@@ -276,10 +276,7 @@ specified, then it is used to construct the root-data. "
                                                    (helm-candidate-buffer))))
         for i in candidates
         for abs = (expand-file-name i root)
-        for disp = (if (and helm-ff-transformer-show-only-basename
-                            (not (helm-dir-is-dot i)))
-                       (helm-basename i)
-                     i)
+        for disp = i
         collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
 (defun helm-cmd-t-cache-p (line-count repo-type repo-root)
@@ -511,4 +508,3 @@ based on system type.
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; helm-cmd-t.el ends here
-
