@@ -363,7 +363,7 @@ This is a convenience function for external libraries."
   (let ((cmd (nth 2 (assoc repo-type helm-cmd-t-repo-types))))
     (if (functionp cmd)
         (funcall cmd repo-root)
-      (shell-command (format-spec cmd (format-spec-make ?d repo-root)) t))))
+      (shell-command (format-spec cmd (format-spec-make ?d (expand-file-name repo-root))) t))))
 
 (defun helm-cmd-t-get-caches ()
   "return list of buffer names for caches suitable for transformation"
