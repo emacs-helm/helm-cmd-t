@@ -457,7 +457,7 @@ Use C-U to narrow by extensions."
          (globs (cond (globs
                        (list "--" globs))
                       ((list
-                        helm-ff-default-directory))))
+                        (helm-cmd-t-root cache-buffer)))))
          ;; `helm-grep-init' initialize `default-directory' to this value,
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
