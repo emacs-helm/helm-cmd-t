@@ -451,10 +451,13 @@ Use C-U to narrow by extensions."
 
   ;; We set it here in case of nil, which breaks resume.
   (setq helm-ff-default-directory (or helm-ff-default-directory
-                                      (helm-cmd-t-root cache-buffer)))
+                                     (helm-cmd-t-root cache-buffer)))
   (let* ((helm-grep-default-command "git grep -n%cH --full-name -E %p %f")
          helm-grep-default-recurse-command
-         (globs (list "--" globs))
+         (globs (cond (globs
+                       (list "--" globs))
+                      ((list
+                        helm-ff-default-directory))))
          ;; `helm-grep-init' initialize `default-directory' to this value,
          ;; So set this value (i.e `helm-ff-default-directory') to
          ;; something else.
