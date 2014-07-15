@@ -215,8 +215,8 @@ return NIL if no root found.
 If `helm-cmd-t-data' is defined and no parameters are
 specified, then it is used to construct the root-data. "
   (if (and (null file)
-           (null no-default)
-           helm-cmd-t-data)
+         (null no-default)
+         helm-cmd-t-data)
       (cons (cdr (assq 'repo-type helm-cmd-t-data))
             (cdr (assq 'repo-root helm-cmd-t-data)))
     (setq file (or file
@@ -379,8 +379,8 @@ This is a convenience function for external libraries."
     (init . (lambda () (setq helm-cmd-t-ftime (float-time))))
     (candidates . helm-cmd-t-get-caches)
     (candidate-transformer . helm-cmd-t-repos-transformer)
-    (persistent-action . helm-switch-to-buffer)
-    (persistent-help . "Show buffer")
+    (persistent-action . helm-cmd-t-run-grep)
+    (persistent-help . "grep")
     (action . (("cmd-t"      . helm-cmd-t-for-buffer)
                ("grep"   .   tbd)
                ("INVALIDATE" . helm-kill-marked-buffers)))
@@ -396,9 +396,9 @@ Remove invalidate if not cached."
       (mapc (lambda (action)
               (cond ((string-match "\\`grep\\'" (car action))
                      (push (cond ((string= repo-type "git")
-                                  (cons "git grep" 'helm-cmd-t-git-grep))
+                                  (cons "git grep" 'helm-cmd-t-grep))
                                  ((string= repo-type "")
-                                  (cons "recursive grep" 'helm-cmd-t-dir-grep)))
+                                  (cons "recursive grep" 'helm-cmd-t-grep)))
                            res))
                     ((string-match "INVALIDATE" (car action)))
                     (t
@@ -436,19 +436,40 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
 (defun helm-cmd-t-read-glob ()
   (format "'%s'" (read-string "OnlyExt(e.g. *.rb *.erb): ")))
 
+(defun helm-cmd-t-run-grep (arg)
+  "Run Grep action from `helm-cmd-t-repos'."
+  (interactive)
+  (with-helm-alive-p
+    (helm-quit-and-execute-action 'helm-cmd-t-grep_)))
+
+(defun helm-cmd-t-grep_ (candidate-buffer)
+  (apply 'run-with-timer 0.01 nil
+         #'helm-cmd-t-grep
+         candidate-buffer
+         (when helm-current-prefix-arg
+           (list (helm-cmd-t-read-glob)))))
+
 ;;;###autoload
+(defun helm-cmd-t-grep (candidate-buffer &optional globs)
+  "Grep action run from `helm-cmd-t-repos'.
+
+Redirect to the correct grep based on `candidate-buffer'."
+  (interactive (list (current-buffer)
+                     (when current-prefix-arg
+                       (helm-cmd-t-read-glob))))
+  (let* ((repo-type (or (cdr (assq 'repo-type (buffer-local-value 'helm-cmd-t-data candidate-buffer)))
+                       (with-current-buffer candidate-buffer
+                         (car (helm-cmd-t-root-data))))))
+    (funcall (cond ((string= repo-type "git")
+                    'helm-cmd-t-git-grep)
+                   ((string= repo-type "")
+                    'helm-cmd-t-dir-grep))
+             candidate-buffer globs)))
+
 (defun helm-cmd-t-git-grep (cache-buffer &optional globs)
   "Do git grep.  Accessible as command or from the repos source.
 
 Use C-U to narrow by extensions."
-  (interactive (list (current-buffer)
-                     (when current-prefix-arg
-                       (helm-cmd-t-read-glob))))
-
-  ;; helm does not invoke this interactively
-  (when helm-current-prefix-arg
-    (setq globs (helm-cmd-t-read-glob)))
-
   ;; We set it here in case of nil, which breaks resume.
   (setq helm-ff-default-directory (or helm-ff-default-directory
                                      (helm-cmd-t-root cache-buffer)))
@@ -469,10 +490,14 @@ Use C-U to narrow by extensions."
                                               ,helm-ff-default-directory)))
     (helm-do-grep-1 globs)))
 
-(defun helm-cmd-t-dir-grep (cache-buffer)
+(defun helm-cmd-t-dir-grep (cache-buffer &optional globs)
+  "Dir based grep."
+  ;; helm does not invoke this interactively
+  (when helm-current-prefix-arg
+    (setq globs (helm-cmd-t-read-glob)))
   (helm-do-grep-1 (list (cdr (assq 'repo-root
                                    (buffer-local-value 'helm-cmd-t-data cache-buffer))))
-                  'recurse nil nil))
+                  'recurse nil globs))
 
 (defun helm-cmd-t-for-buffer (buffer)
   "used as action from `helm-cmd-t-repos' "
