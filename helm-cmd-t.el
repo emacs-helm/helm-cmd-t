@@ -311,7 +311,6 @@ repo is always listed when selecting repos."
                                       (helm-candidate-buffer ,candidate-buffer)))
                             (candidates-in-buffer)
                             (keymap . ,helm-generic-files-map)
-                            (match helm-files-match-only-basename)
                             (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
                             (action-transformer helm-transform-file-load-el)
                             (action . ,(cdr (helm-get-actions-from-type helm-source-locate)))
