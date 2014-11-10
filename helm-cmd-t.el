@@ -473,7 +473,7 @@ Use C-U to narrow by extensions."
   (setq helm-ff-default-directory (or helm-ff-default-directory
                                      (helm-cmd-t-root cache-buffer)))
   (let* ((helm-grep-default-command "git grep -n%cH --full-name -E %p %f")
-         helm-grep-default-recurse-command
+         (helm-grep-default-recurse-command helm-grep-default-command)
          (globs (cond (globs
                        (list "--" globs))
                       ((list
