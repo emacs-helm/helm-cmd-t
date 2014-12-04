@@ -8,13 +8,18 @@ Each repository is cached for fast access (see `helm-cmd-t-cache-threshhold'),
 and in the future, options will be available to interact with the repository
 (i.e. grep, etc).
 
-`helm-cmd-t' is the simple predefined command that opens a file in the current
-repository, however, it's highly recommended that you add a helm source like
-recentf that keeps track of recent files you've worked with.  This way, you
-don't have to worry about your respository cache being out of sync.  See
-"helm-C-x-b.el" for an example of a custom drop-in replacement for
-`switch-to-buffer' or "C-x b".
 
+** helm-C-x-b
+
+`helm-cmd-t' is the simple predefined command that opens a file in the current
+repository.  However, it's highly recommended that you add a helm source like
+recentf that keeps track of recent files you've worked with.
+
+Once you do this, you don't have to worry about your respository cache being
+out of sync nearly as /newly created files will appear through other sources/.
+
+See "helm-C-x-b.el" for an example of a custom drop-in replacement for
+`switch-to-buffer' or "C-x b".
 
 * What about helm-ls-git
 
