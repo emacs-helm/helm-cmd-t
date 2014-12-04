@@ -89,6 +89,9 @@
 (require 'helm-files)
 (require 'helm-grep)
 
+(declare-function helm-cmd-t-dumb-glob-to-regexp "helm-cmd-t-find")
+(declare-function helm-cmd-t-insert-tree-1 "helm-cmd-t-find")
+
 (defcustom helm-cmd-t-cache-threshhold 1000
   "If a repo has more entries than this value it will be cached.
 
