@@ -31,6 +31,10 @@ Once cacheing kicks in for a respo, you can manually invalidate it by
 1. Bring up a list of repositories by using the the universal prefix `C-u M-t`.
 2. Press <tab> to get the list of actions associated with the repo.
 3. Choose "INVALIDATE".
+* Grep
+
+Use the same steps as specified in "Cache management", but choose the grep
+command, e.g. "git grep"
 
 * What about helm-ls-git
 
