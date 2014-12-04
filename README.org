@@ -4,10 +4,7 @@ This package provides a helm source for repository (git, hg, etc) based file
 selection.  The emphasis is on fast file-name completion.  The concept of a
 "respository" is configurable through `helm-cmd-t-repo-types'.
 
-Each repository is cached for fast access (see `helm-cmd-t-cache-threshhold'),
-and in the future, options will be available to interact with the repository
-(i.e. grep, etc).
-
+Each repository is cached for fast access.
 
 ** helm-C-x-b
 
@@ -20,6 +17,20 @@ out of sync nearly as /newly created files will appear through other sources/.
 
 See "helm-C-x-b.el" for an example of a custom drop-in replacement for
 `switch-to-buffer' or "C-x b".
+
+* Cache management
+
+For large repositories (>2000 in a git repository), it's inefficient use a fresh file list whenever every time the source is used.
+
+You can set `helm-cmd-t-cache-threshhold' to define when you want this cache
+to kick in.  It's a balancing act between information "freshness" and UI
+responsiveness.
+
+Once cacheing kicks in for a respo, you can manually invalidate it by 
+
+1. Bring up a list of repositories by using the the universal prefix `C-u M-t`.
+2. Press <tab> to get the list of actions associated with the repo.
+3. Choose "INVALIDATE".
 
 * What about helm-ls-git
 
