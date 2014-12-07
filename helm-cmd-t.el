@@ -251,15 +251,13 @@ specified, then it is used to construct the root-data. "
         (t
          (format "%.1fk files" (/ lines 1000.0)))))
 
-(defvar helm-cmd-t-ftime nil)
-
 (defun helm-cmd-t-format-title (data)
   "format header line according to `helm-cmd-t-header-format'"
   (let* ((repo-root (cdr (assq 'repo-root data)))
          (repo-type (cdr (assq 'repo-type data)))
          (cached-p (cdr (assq 'cached-p data)))
          (age (if cached-p
-                  (- helm-cmd-t-ftime (cdr (assq 'time-stamp data)))
+                  (- (float-time) (cdr (assq 'time-stamp data)))
                 0))
          (age-str (helm-cmd-t-format-age age))
          (lines (helm-cmd-t-format-lines
@@ -377,7 +375,6 @@ This is a convenience function for external libraries."
 
 (defvar helm-source-cmd-t-caches
   `((name . "Cmd-t repo caches")
-    (init . (lambda () (setq helm-cmd-t-ftime (float-time))))
     (candidates . helm-cmd-t-get-caches)
     (candidate-transformer . helm-cmd-t-repos-transformer)
     (persistent-action . helm-cmd-t-run-grep)
