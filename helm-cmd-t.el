@@ -85,7 +85,6 @@
 
 
 (require 'helm-config)
-(require 'helm-locate)
 (require 'helm-files)
 (require 'helm-grep)
 
@@ -320,7 +319,7 @@ repo is always listed when selecting repos."
                               (keymap . ,helm-generic-files-map)
                               (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
                               (action-transformer helm-transform-file-load-el)
-                              (action . ,(cdr (helm-get-actions-from-type helm-source-locate)))
+                              (action . ,(helm-actions-from-type-file))
                               ;; not for helm, but for lookup if needed
                               (candidate-buffer . ,candidate-buffer)))
             (push (cons 'helm-source my-source) new-data)
