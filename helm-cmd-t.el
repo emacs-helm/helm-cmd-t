@@ -173,7 +173,7 @@ as its parameter. ")
 
 ;;; helm delays source initialization
 (setq helm-source-buffers-list (or helm-source-buffers-list
-                                  (helm-make-source "Buffers" 'helm-source-buffers))))
+                                  (helm-make-source "Buffers" 'helm-source-buffers)))
 
 (defun helm-cmd-t-root (&optional buff)
   "return repo root of buffer as string"
