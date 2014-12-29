@@ -141,9 +141,9 @@ see `grep-find-ignored-files' for inspiration."
 
 
 (defvar helm-cmd-t-repo-types
-  `(("git"         ".git"           "cd '%d' && git --no-pager ls-files --full-name")
-    ("hg"          ".hg"            "cd '%d' && hg manifest")
-    ("bzr"         ".bzr"           "cd '%d' && bzr ls --versioned")
+  `(("git"         ".git"           "cd %d && git --no-pager ls-files --full-name")
+    ("hg"          ".hg"            "cd %d && hg manifest")
+    ("bzr"         ".bzr"           "cd %d && bzr ls --versioned")
     ("dir-locals"  ".dir-locals.el" helm-cmd-t-get-find)
     (""            ""               helm-cmd-t-get-find))
   "root types supported.
