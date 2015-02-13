@@ -144,6 +144,7 @@ see `grep-find-ignored-files' for inspiration."
   `(("git"         ".git"           "cd %d && git --no-pager ls-files --full-name")
     ("hg"          ".hg"            "cd %d && hg manifest")
     ("bzr"         ".bzr"           "cd %d && bzr ls --versioned")
+    ("perforce"    ".perforce"      helm-cmd-t-get-find)
     ("dir-locals"  ".dir-locals.el" helm-cmd-t-get-find)
     (""            ""               helm-cmd-t-get-find))
   "root types supported.
