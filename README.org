@@ -62,16 +62,20 @@ for Helm completion and grep.
 
 3. add to your config
 
+#+begin_src emacs-lisp
     (push "~/.emacs.d/helm-cmd-t" load-path)
     (require 'helm-config)
     (require 'helm-cmd-t)
     (global-set-key (kbd "M-t") 'helm-cmd-t)
+#+end_src
 
 4. additional optional helm settings to make helm more responsive.
 
+#+begin_src emacs-lisp
     (setq helm-ff-lynx-style-map nil
           helm-input-idle-delay 0.1
           helm-idle-delay 0.1)
+#+end_src
 
 5. have a look at helm-C-x-b.el for more examples of how to use the
    `helm-cmd-t' source to craft your own master file chooser.
@@ -97,7 +101,7 @@ for Helm completion and grep.
 
 see helm-C-x-b.el
 
-* But what about fuzy matching?
+* But what about fuzzy matching?
 
 Fuzzy matching is really interesting and useful when done well.
 Unfortunatley it hasn't been done well in Helm.
