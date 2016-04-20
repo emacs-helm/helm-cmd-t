@@ -53,8 +53,9 @@
 
 (provide 'helm-C-x-b)
 
-(defvar helm-C-x-b-sources '(helm-source-buffers-list
-                             helm-source-session
+(defvar helm-C-x-b-sources `(helm-source-buffers-list
+                             ,@(when (featurep 'session)
+                                 (list 'helm-source-session))
                              helm-source-files-in-current-dir
                              helm-source-cmd-t
                              helm-source-buffer-not-found)
