@@ -1,3 +1,5 @@
+WARNING: This package is no more maintained and broken for now
+
 * Purpose
 
 This package provides a helm source for repository (git, hg, etc) based file
@@ -101,14 +103,3 @@ for Helm completion and grep.
 
 see helm-C-x-b.el
 
-* But what about fuzzy matching?
-
-Fuzzy matching is really interesting and useful when done well.
-Unfortunatley it hasn't been done well in Helm.
-
-See [[https://github.com/lewang/flx][flx]] for a take on fuzzy (flex) matching similar to Sublime Text's.
-Unfortunately it's not available in Helm yet.
-
-Helm's space separated regexps require a few more keystrokes, but the results
-are consistent and predictable.  See the header of helm-match-plugin.el for
-details.
