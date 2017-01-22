@@ -1,5 +1,3 @@
-WARNING: This package is no more maintained and broken for now
-
 * Purpose
 
 This package provides a helm source for repository (git, hg, etc) based file
