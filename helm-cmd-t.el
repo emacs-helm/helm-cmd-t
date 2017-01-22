@@ -286,8 +286,8 @@ specified, then it is used to construct the root-data. "
                                (buffer-local-value 'helm-cmd-t-data
                                                    buf)))
         for i in candidates
-        for abs = (expand-file-name (second i) root)
-        for disp = (first i)
+        for abs = (expand-file-name (cdr i) root)
+        for disp = (car i)
         collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
 (defun helm-cmd-t-cache-p (line-count repo-type repo-root)
