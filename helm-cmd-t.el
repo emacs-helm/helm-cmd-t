@@ -281,9 +281,10 @@ specified, then it is used to construct the root-data. "
                                                             ?l lines))))
 (defun helm-cmd-t-transform-candidates (candidates source)
   "convert each candidate to cons of (disp . real)"
-  (loop with root = (cdr (assq 'repo-root
+  (loop with buf = (cdr (assq 'candidate-buffer source))
+        with root = (cdr (assq 'repo-root
                                (buffer-local-value 'helm-cmd-t-data
-                                                   (helm-candidate-buffer))))
+                                                   buf)))
         for i in candidates
         for abs = (expand-file-name i root)
         for disp = i
@@ -299,7 +300,7 @@ specified, then it is used to construct the root-data. "
 (defun helm-cmd-t-get-create-source (repo-root-data &optional skeleton)
   "Get cached source or create new one.
 SKELETON is used to ensure a repo is listed without doing any
-extra work to laod it. This can be used to ensure the 'current'
+extra work to load it. This can be used to ensure the 'current'
 repo is always listed when selecting repos."
   (let* ((repo-root (cdr repo-root-data))
          (repo-type (car repo-root-data))
@@ -424,9 +425,10 @@ With prefix arg C-u, run `helm-cmd-t-repos'.
   (interactive "P")
   (if (consp arg)
       (call-interactively 'helm-cmd-t-repos)
-    (let ((root-data (helm-cmd-t-root-data)))
+    (let* ((root-data (helm-cmd-t-root-data))
+           (source (helm-cmd-t-get-create-source root-data)))
       (if root-data
-          (helm :sources (helm-cmd-t-get-create-source root-data)
+          (helm :sources source
                 :candidate-number-limit helm-cmd-t-candidate-number-limit
                 :buffer "*helm-cmd-t:*")
         (error "No repository for %s" default-directory)))))
