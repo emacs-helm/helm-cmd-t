@@ -109,7 +109,7 @@ With universal prefix arg (C-u), run `helm-cmd-t-repos'.
     (let ((helm-ff-transformer-show-only-basename nil))
       (helm :sources (helm-C-x-b-sources)
             :candidate-number-limit 20
-            :buffer "*helm-cmd-t:*"))))
+            :buffer "*helm-C-x-b:*"))))
 
 
 

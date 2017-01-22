@@ -279,16 +279,6 @@ specified, then it is used to construct the root-data. "
                                                             ?t repo-type
                                                             ?a age-str
                                                             ?l lines))))
-(defun helm-cmd-t-transform-candidates (candidates source)
-  "convert each candidate to cons of (disp . real)"
-  (loop with buf = (cdr (assq 'helm-cmd-t-candidate-buffer source))
-        with root = (cdr (assq 'repo-root
-                               (buffer-local-value 'helm-cmd-t-data
-                                                   buf)))
-        for i in candidates
-        for abs = (expand-file-name (second i) root)
-        for disp = (first i)
-        collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
 (defun helm-cmd-t-cache-p (line-count repo-type repo-root)
   (cond ((functionp helm-cmd-t-cache-threshhold)
@@ -299,7 +289,7 @@ specified, then it is used to construct the root-data. "
 
 (defclass helm-cmd-t-source (helm-source-in-buffer helm-type-file)
   ((action-transformer :initform helm-transform-file-load-el)
-   (filtered-candidate-transformer :initform helm-cmd-t-transform-candidates)
+   (display-to-real :initform (lambda (candidate) (message "cand: buf %s" (current-buffer)) candidate))
    (helm-cmd-t-candidate-buffer
     :initarg :helm-cmd-t-candidate-buffer
     :initform nil)))
