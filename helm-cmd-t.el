@@ -1,4 +1,4 @@
-;;; helm-cmd-t.el --- cmd-t style completion
+;;; helm-cmd-t.el --- cmd-t style completion -*- lexical-binding: t -*-
 
 ;; this file is not part of Emacs
 
@@ -83,10 +83,10 @@
 
 (eval-when-compile (require 'cl))
 
-
 (require 'helm-config)
 (require 'helm-files)
 (require 'helm-grep)
+(require 'helm-source)
 
 (declare-function helm-cmd-t-dumb-glob-to-regexp "helm-cmd-t-find")
 (declare-function helm-cmd-t-insert-tree-1 "helm-cmd-t-find")
@@ -281,13 +281,13 @@ specified, then it is used to construct the root-data. "
                                                             ?l lines))))
 (defun helm-cmd-t-transform-candidates (candidates source)
   "convert each candidate to cons of (disp . real)"
-  (loop with buf = (cdr (assq 'candidate-buffer source))
+  (loop with buf = (cdr (assq 'helm-cmd-t-candidate-buffer source))
         with root = (cdr (assq 'repo-root
                                (buffer-local-value 'helm-cmd-t-data
                                                    buf)))
         for i in candidates
-        for abs = (expand-file-name i root)
-        for disp = i
+        for abs = (expand-file-name (second i) root)
+        for disp = (first i)
         collect (cons (propertize disp 'face 'helm-ff-file) abs)))
 
 (defun helm-cmd-t-cache-p (line-count repo-type repo-root)
@@ -296,6 +296,13 @@ specified, then it is used to construct the root-data. "
         ((numberp helm-cmd-t-cache-threshhold)
          (>= line-count helm-cmd-t-cache-threshhold))
         ((not helm-cmd-t-cache-threshhold))))
+
+(defclass helm-cmd-t-source (helm-source-in-buffer helm-type-file)
+  ((action-transformer :initform helm-transform-file-load-el)
+   (filtered-candidate-transformer :initform helm-cmd-t-transform-candidates)
+   (helm-cmd-t-candidate-buffer
+    :initarg :helm-cmd-t-candidate-buffer
+    :initform nil)))
 
 (defun helm-cmd-t-get-create-source (repo-root-data &optional skeleton)
   "Get cached source or create new one.
@@ -308,35 +315,30 @@ repo is always listed when selecting repos."
          (candidate-buffer (get-buffer-create source-buffer-name))
          (data (buffer-local-value 'helm-cmd-t-data candidate-buffer))
          (my-source (when (cdr (assq 'cached-p data))
-                        (cdr (assq 'helm-source data)))))
+                      (cdr (assq 'helm-source data)))))
     (or my-source
-        (with-current-buffer candidate-buffer
-          (erase-buffer)
-          (setq default-directory (file-name-as-directory repo-root))
-          (unless skeleton
+       (with-current-buffer candidate-buffer
+         (erase-buffer)
+         (setq default-directory (file-name-as-directory repo-root))
+         (unless skeleton
            (helm-cmd-t-insert-listing repo-type repo-root))
-          (let* ((lines (count-lines (point-min) (point-max)))
-                 (new-data (list (cons 'repo-root repo-root)
-                                 (cons 'repo-type repo-type)
-                                 (cons 'time-stamp (float-time))
-                                 (cons 'lines lines)
-                                 (cons 'cached-p (if skeleton nil
-                                                  (helm-cmd-t-cache-p lines repo-type repo-root))))))
-            (setq my-source `((name . ,(format "[%s]" (abbreviate-file-name repo-root)))
-                              (header-name . (lambda (_)
-                                               (helm-cmd-t-format-title (quote ,new-data))))
-                              (init . (lambda ()
-                                        (helm-candidate-buffer ,candidate-buffer)))
-                              (candidates-in-buffer)
-                              (keymap . ,helm-generic-files-map)
-                              (filtered-candidate-transformer . helm-cmd-t-transform-candidates)
-                              (action-transformer helm-transform-file-load-el)
-                              (action . ,(helm-actions-from-type-file))
-                              ;; not for helm, but for lookup if needed
-                              (candidate-buffer . ,candidate-buffer)))
-            (push (cons 'helm-source my-source) new-data)
-            (set (make-local-variable 'helm-cmd-t-data) new-data))
-          my-source))))
+         (let* ((lines (count-lines (point-min) (point-max)))
+                (new-data (list (cons 'repo-root repo-root)
+                                (cons 'repo-type repo-type)
+                                (cons 'time-stamp (float-time))
+                                (cons 'lines lines)
+                                (cons 'cached-p (if skeleton nil
+                                                  (helm-cmd-t-cache-p lines repo-type repo-root)))))
+                (source-name (format "[%s]" (abbreviate-file-name repo-root))))
+           (setq my-source (helm-make-source source-name 'helm-cmd-t-source
+                             :init (lambda ()
+                                     (helm-candidate-buffer candidate-buffer))
+                             :header-name (lambda (_)
+                                            (helm-cmd-t-format-title new-data))
+                             :helm-cmd-t-candidate-buffer candidate-buffer))
+           (push (cons 'helm-source my-source) new-data)
+           (set (make-local-variable 'helm-cmd-t-data) new-data))
+         my-source))))
 
 (defun helm-cmd-t-get-create-source-dir (dir)
   "create a source from DIR, coercing if necessary."
